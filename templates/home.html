@@ -1,0 +1,353 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Food Bridge · Share Food, Spread Hope{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <div class="container">
+        <div class="hero-grid">
+            <div class="hero-copy">
+                <span class="eyebrow"><i class="fa-solid fa-seedling"></i> A movement against food waste</span>
+                <h1>Share Food,<br><span class="accent">Spread Hope.</span></h1>
+                <p class="lead">Every meal deserves a purpose. Connect surplus food with people who need it and help build a world without food waste.</p>
+                <div class="hero-actions">
+                    <a href="{% if user.is_authenticated %}{{ user.dashboard_url }}{% else %}{% url 'accounts:register' %}?role=donor{% endif %}" class="btn btn-brand btn-lg">
+                        <i class="fa-solid fa-hand-holding-heart"></i> Donate Food
+                    </a>
+                    <a href="{% if user.is_authenticated %}{{ user.dashboard_url }}{% else %}{% url 'accounts:register' %}?role=ngo{% endif %}" class="btn btn-outline-forest btn-lg">
+                        <i class="fa-solid fa-magnifying-glass"></i> Find Food
+                    </a>
+                </div>
+                <div class="hero-trust">
+                    <div class="trust-item">
+                        <span class="trust-icon"><i class="fa-solid fa-shield-heart"></i></span>
+                        Food-safety tracked
+                    </div>
+                    <div class="trust-item">
+                        <span class="trust-icon orange"><i class="fa-solid fa-wand-magic-sparkles"></i></span>
+                        Smart NGO matching
+                    </div>
+                    <div class="trust-item">
+                        <span class="trust-icon"><i class="fa-solid fa-people-group"></i></span>
+                        Community powered
+                    </div>
+                </div>
+            </div>
+
+            <div class="hero-visual">
+                <div class="hero-blob"></div>
+                <div class="hero-orbit"></div>
+                {% if hero_donation %}
+                <article class="hero-card">
+                    <div class="hero-card-media">
+                        {% if hero_donation.image %}
+                            <img src="{{ hero_donation.image.url }}" alt="{{ hero_donation.food_name }}">
+                        {% else %}
+                            <i class="fa-solid {{ hero_donation.category_icon }} media-icon"></i>
+                        {% endif %}
+                        <span class="hero-card-badge"><span class="live-dot"></span> Available to rescue</span>
+                        <span class="hero-card-category">{{ hero_donation.get_category_display }}</span>
+                    </div>
+                    <div class="hero-card-body">
+                        <h3>{{ hero_donation.food_name }}</h3>
+                        <div class="hero-card-meta">
+                            <span><i class="fa-solid fa-weight-hanging"></i>{{ hero_donation.quantity_display }}</span>
+                            <span><i class="fa-solid fa-location-dot"></i>{{ hero_donation.pickup_city }}</span>
+                            <span><i class="fa-regular fa-clock"></i><span data-expires-at="{{ hero_donation.expires_at|date:'c' }}">Calculating…</span></span>
+                        </div>
+                        <div class="hero-card-footer">
+                            <span class="hero-card-donor">
+                                <span class="avatar-initials avatar-sm">{{ hero_donation.donor.initials }}</span>
+                                {{ hero_donation.donor.display_name|truncatechars:22 }}
+                            </span>
+                            {% if user.is_authenticated %}
+                            <a href="{% url 'donations:detail' hero_donation.pk %}" class="hero-card-cta">View donation <i class="fa-solid fa-arrow-right"></i></a>
+                            {% else %}
+                            <a href="{% url 'accounts:register' %}?role=ngo" class="hero-card-cta">Rescue this <i class="fa-solid fa-arrow-right"></i></a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </article>
+                {% else %}
+                <div class="hero-empty">
+                    <i class="fa-solid fa-bowl-food"></i>
+                    <h3>Ready for the first rescue</h3>
+                    <p>Surplus food shared here will appear live on this card. Join the movement and create the first donation.</p>
+                </div>
+                {% endif %}
+
+                <div class="float-chip chip-one">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i>
+                    <span>Smart matching<small>Category · city · quantity · expiry</small></span>
+                </div>
+                <div class="float-chip orange chip-two">
+                    <i class="fa-solid fa-clock"></i>
+                    <span>Expiry watch<small>Unsafe food is automatically removed</small></span>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="section" id="how-it-works">
+    <div class="container">
+        <div class="section-head center reveal">
+            <span class="eyebrow"><i class="fa-solid fa-diagram-project"></i> How it works</span>
+            <h2>From surplus to shared meal,<br>in four clear steps.</h2>
+            <p>Food Bridge gives every donation a visible, accountable journey — from the donor's kitchen to the NGO's table.</p>
+        </div>
+        <div class="steps-grid">
+            <article class="step-card reveal">
+                <span class="step-number">01</span>
+                <span class="step-icon"><i class="fa-solid fa-utensils"></i></span>
+                <h3>Donors share surplus</h3>
+                <p>Restaurants, hotels, event organisers, and individuals list surplus food with quantity, preparation time, and a safe expiry window.</p>
+            </article>
+            <article class="step-card reveal">
+                <span class="step-number">02</span>
+                <span class="step-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></span>
+                <h3>NGOs find a match</h3>
+                <p>Verified NGOs see available food ranked by their category preferences, location, quantity requirements, and urgency.</p>
+            </article>
+            <article class="step-card reveal">
+                <span class="step-number">03</span>
+                <span class="step-icon"><i class="fa-solid fa-truck-fast"></i></span>
+                <h3>Volunteers deliver</h3>
+                <p>Once a request is accepted, an available volunteer is assigned, collects the food, and updates pickup and delivery status.</p>
+            </article>
+            <article class="step-card reveal">
+                <span class="step-number">04</span>
+                <span class="step-icon"><i class="fa-solid fa-chart-line"></i></span>
+                <h3>Impact is tracked</h3>
+                <p>Every step is logged. Donors, NGOs, volunteers, and administrators see real, database-backed impact — not estimates.</p>
+            </article>
+        </div>
+    </div>
+</section>
+
+<section class="section section-cream" id="features">
+    <div class="container">
+        <div class="section-head center reveal">
+            <span class="eyebrow orange"><i class="fa-solid fa-wand-magic-sparkles"></i> Built for real operations</span>
+            <h2>More than a donation form.</h2>
+            <p>A complete operating system for food rescue — designed around safety, accountability, and speed.</p>
+        </div>
+        <div class="feature-grid">
+            <article class="feature-card reveal">
+                <span class="feature-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></span>
+                <h3>Smart Food Matching</h3>
+                <p>A transparent, rule-based score ranks donations for each NGO using category, city, quantity, and expiry urgency. Every recommendation explains itself.</p>
+                <span class="feature-tag">High · Medium · Low match</span>
+            </article>
+            <article class="feature-card reveal">
+                <span class="feature-icon"><i class="fa-solid fa-hourglass-half"></i></span>
+                <h3>Expiry Monitoring</h3>
+                <p>Live countdowns, warning badges, automatic expiry, and a safety rule that blocks expired food from ever being requested or picked up.</p>
+                <span class="feature-tag">Safety first</span>
+            </article>
+            <article class="feature-card reveal">
+                <span class="feature-icon"><i class="fa-solid fa-route"></i></span>
+                <h3>Journey Tracking</h3>
+                <p>A seven-stage progress tracker follows each donation from creation to completion, with a full event timeline and live status polling.</p>
+                <span class="feature-tag">Created → Completed</span>
+            </article>
+            <article class="feature-card reveal">
+                <span class="feature-icon"><i class="fa-regular fa-bell"></i></span>
+                <h3>Automated Notifications</h3>
+                <p>Request updates, volunteer assignments, pickups, deliveries, verification decisions, and expiry warnings arrive in-app for the right people.</p>
+                <span class="feature-tag">No missed handoffs</span>
+            </article>
+            <article class="feature-card reveal">
+                <span class="feature-icon"><i class="fa-solid fa-chart-simple"></i></span>
+                <h3>Impact Analytics</h3>
+                <p>Category breakdowns, monthly trends, rescued quantities, connected NGOs, and active volunteer counts — all calculated from live records.</p>
+                <span class="feature-tag">Database-backed</span>
+            </article>
+            <article class="feature-card reveal">
+                <span class="feature-icon"><i class="fa-solid fa-user-shield"></i></span>
+                <h3>Roles &amp; Governance</h3>
+                <p>Separate workspaces for donors, NGOs, volunteers, and administrators, with NGO verification, account blocking, and an audit trail.</p>
+                <span class="feature-tag">Accountable by design</span>
+            </article>
+        </div>
+    </div>
+</section>
+
+<section class="section" id="why">
+    <div class="container">
+        <div class="why-grid">
+            <div class="why-panel reveal">
+                <h3>Why food rescue needs a system.</h3>
+                <div class="why-list">
+                    <div class="why-item">
+                        <i class="fa-solid fa-clock"></i>
+                        <div>
+                            <strong>Surplus food is time-sensitive</strong>
+                            <span>A delayed handoff can turn a meal into waste. Urgency is part of the match score.</span>
+                        </div>
+                    </div>
+                    <div class="why-item">
+                        <i class="fa-solid fa-shield-heart"></i>
+                        <div>
+                            <strong>Safety cannot be optional</strong>
+                            <span>Preparation and expiry times are required. Unsafe food is removed automatically.</span>
+                        </div>
+                    </div>
+                    <div class="why-item">
+                        <i class="fa-solid fa-link"></i>
+                        <div>
+                            <strong>Coordination is the hard part</strong>
+                            <span>Donor, NGO, and volunteer each get a clear next action and a shared source of truth.</span>
+                        </div>
+                    </div>
+                    <div class="why-item">
+                        <i class="fa-solid fa-chart-line"></i>
+                        <div>
+                            <strong>Impact must be measurable</strong>
+                            <span>Every completed delivery contributes to real quantities and trends, not vanity numbers.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="why-content reveal">
+                <span class="eyebrow"><i class="fa-solid fa-quote-left"></i> Why Food Bridge</span>
+                <h2>Good intentions,<br>made operational.</h2>
+                <p>Many restaurants want to donate. Many NGOs need food. Many volunteers want to help. What is usually missing is a trusted bridge between them. Food Bridge turns goodwill into a clear, trackable workflow with safety checks at every handoff.</p>
+                <div class="why-checks">
+                    <span class="why-check"><i class="fa-solid fa-circle-check"></i> Verified NGO access</span>
+                    <span class="why-check"><i class="fa-solid fa-circle-check"></i> Private contact sharing</span>
+                    <span class="why-check"><i class="fa-solid fa-circle-check"></i> Validated status transitions</span>
+                    <span class="why-check"><i class="fa-solid fa-circle-check"></i> Duplicate request prevention</span>
+                    <span class="why-check"><i class="fa-solid fa-circle-check"></i> Role-based dashboards</span>
+                    <span class="why-check"><i class="fa-solid fa-circle-check"></i> Audit-ready activity logs</span>
+                </div>
+                <div class="mt-4">
+                    <a href="{% url 'analytics:impact' %}" class="btn btn-forest">See our live impact <i class="fa-solid fa-arrow-right"></i></a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="section section-cream">
+    <div class="container">
+        <div class="impact-band reveal">
+            <div class="row align-items-center g-4">
+                <div class="col-lg-4">
+                    <div class="impact-head">
+                        <span class="eyebrow on-dark"><i class="fa-solid fa-chart-simple"></i> Impact, as it happens</span>
+                        <h2 class="mt-3">Real food.<br>Real people.<br>Real records.</h2>
+                        <p>Every number below is calculated from the Food Bridge database. No estimates, no invented statistics.</p>
+                        <a href="{% url 'analytics:impact' %}" class="btn btn-soft btn-sm mt-2">Explore the impact dashboard <i class="fa-solid fa-arrow-right"></i></a>
+                    </div>
+                </div>
+                <div class="col-lg-8">
+                    <div class="row g-3">
+                        <div class="col-6 col-md-3">
+                            <div class="impact-stat">
+                                <div class="value">{{ overview.total_donations }}</div>
+                                <div class="label">Donations created</div>
+                                <div class="sub">Every listing ever shared</div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="impact-stat">
+                                <div class="value">{{ overview.completed_deliveries }}</div>
+                                <div class="label">Completed deliveries</div>
+                                <div class="sub">Confirmed by recipient NGOs</div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="impact-stat">
+                                <div class="value">{{ overview.ngos_connected }}</div>
+                                <div class="label">Verified NGOs</div>
+                                <div class="sub">Connected to the platform</div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="impact-stat">
+                                <div class="value">{{ overview.active_volunteers }}</div>
+                                <div class="label">Active volunteers</div>
+                                <div class="sub">Available for pickups</div>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <hr style="border-color: rgba(255,255,255,.12);">
+                            <div class="d-flex flex-wrap gap-4 align-items-end">
+                                <div>
+                                    <div class="label">Food successfully delivered</div>
+                                    <div class="d-flex flex-wrap gap-3 mt-1">
+                                        {% for quantity in overview.delivered_quantity %}
+                                        <span style="font-family: var(--font-display); font-size: 1.25rem; font-weight: 700; color: #fff;">{{ quantity.formatted }} <small style="font-size:.68rem;color:#a8c4b2;font-weight:500;">{{ quantity.label }}</small></span>
+                                        {% empty %}
+                                        <span style="color:#a8c4b2;font-size:.82rem;">No deliveries completed yet — the first rescue is waiting.</span>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="section" id="about">
+    <div class="container">
+        <div class="about-grid">
+            <div class="about-portrait reveal">
+                <div class="about-plate"><i class="fa-solid fa-bowl-rice"></i></div>
+                <span class="about-chip one"><i class="fa-solid fa-heart"></i> Meals with dignity</span>
+                <span class="about-chip two"><i class="fa-solid fa-earth-asia"></i> Zero-waste future</span>
+            </div>
+            <div class="about-content reveal">
+                <span class="eyebrow orange"><i class="fa-solid fa-people-roof"></i> About Food Bridge</span>
+                <h2>We believe surplus food is not waste. It is an opportunity.</h2>
+                <p>Food Bridge is a social-impact platform that helps restaurants, hotels, event organisers, and individuals share surplus food with verified NGOs. Volunteers coordinate the pickup and delivery, while the platform keeps every handoff transparent.</p>
+                <p>Our mission is simple: make food rescue safe, fast, and measurable. We do that by combining a clear donation workflow, expiry monitoring, smart matching, and impact analytics in one place.</p>
+                <div class="about-points">
+                    <div class="about-point">
+                        <i class="fa-solid fa-check"></i>
+                        <div>
+                            <strong>Dignity for every meal</strong>
+                            <span>Food reaches community organisations who know their people best.</span>
+                        </div>
+                    </div>
+                    <div class="about-point">
+                        <i class="fa-solid fa-check"></i>
+                        <div>
+                            <strong>Safety without friction</strong>
+                            <span>Clear expiry rules protect recipients while keeping donations easy.</span>
+                        </div>
+                    </div>
+                    <div class="about-point">
+                        <i class="fa-solid fa-check"></i>
+                        <div>
+                            <strong>Technology that disappears</strong>
+                            <span>Simple dashboards for the people doing the real work.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="section" style="padding-top: 0;">
+    <div class="container">
+        <div class="cta-panel reveal">
+            <div>
+                <span class="eyebrow" style="background:rgba(255,255,255,.16);color:#fff;"><i class="fa-solid fa-bolt"></i> Start a rescue</span>
+                <h2 class="mt-3">Your surplus can become someone's dinner tonight.</h2>
+                <p>Join as a donor, NGO, or volunteer. It takes a few minutes to start, and every completed delivery is tracked from start to finish.</p>
+            </div>
+            <div class="cta-actions">
+                <a href="{% url 'accounts:register' %}?role=donor" class="btn btn-light btn-lg"><i class="fa-solid fa-plus"></i> Donate food</a>
+                <a href="{% url 'accounts:register' %}?role=ngo" class="btn btn-outline-light btn-lg"><i class="fa-solid fa-hand-holding-heart"></i> Join as NGO</a>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

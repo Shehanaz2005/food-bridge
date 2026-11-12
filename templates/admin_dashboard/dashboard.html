@@ -1,0 +1,225 @@
+{% extends "dashboard_base.html" %}
+{% load static %}
+
+{% block title %}Admin Dashboard · Food Bridge{% endblock %}
+
+{% block dash_content %}
+<section class="welcome-banner">
+    <div>
+        <span class="eyebrow on-dark"><i class="fa-solid fa-shield-halved"></i> Platform control</span>
+        <h2>Good to see you, {{ user.display_name }}.</h2>
+        <p>Verify NGOs, keep pickups moving, review reports, and watch the platform's real impact grow.</p>
+    </div>
+    <div class="banner-actions">
+        <a href="{% url 'analytics:admin_analytics' %}" class="btn btn-brand"><i class="fa-solid fa-chart-simple"></i> Impact analytics</a>
+        <a href="{% url 'admin_audit' %}" class="btn btn-soft"><i class="fa-solid fa-clipboard-list"></i> Audit trail</a>
+    </div>
+</section>
+
+<div class="stat-grid">
+    <div class="stat-card">
+        <div class="stat-top"><span class="stat-icon"><i class="fa-solid fa-bowl-food"></i></span></div>
+        <div class="stat-value">{{ snapshot.overview.total_donations }}</div>
+        <div class="stat-label">Total donations</div>
+        <span class="stat-note muted">{{ snapshot.overview.completed_deliveries }} completed · {{ snapshot.active_deliveries }} active</span>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top"><span class="stat-icon orange"><i class="fa-solid fa-users"></i></span></div>
+        <div class="stat-value">{{ snapshot.total_users }}</div>
+        <div class="stat-label">Registered users</div>
+        <span class="stat-note {% if snapshot.blocked_users %}warn{% else %}muted{% endif %}">{{ snapshot.blocked_users }} blocked account{{ snapshot.blocked_users|pluralize }}</span>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top"><span class="stat-icon info"><i class="fa-solid fa-hand-holding-heart"></i></span></div>
+        <div class="stat-value">{{ snapshot.pending_requests }}</div>
+        <div class="stat-label">Pending requests</div>
+        <span class="stat-note muted">Waiting for donor decisions</span>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top"><span class="stat-icon purple"><i class="fa-solid fa-user-clock"></i></span></div>
+        <div class="stat-value">{{ snapshot.awaiting_assignment }}</div>
+        <div class="stat-label">Awaiting volunteer</div>
+        <span class="stat-note {% if snapshot.awaiting_assignment %}warn{% else %}muted{% endif %}">Accepted donations without a pickup</span>
+    </div>
+</div>
+
+<div class="dash-grid">
+    <div class="card-soft">
+        <div class="card-head">
+            <div>
+                <h2>Food rescues awaiting a volunteer</h2>
+                <p>Assign an available volunteer so accepted food can move</p>
+            </div>
+            <a href="{% url 'admin_assignments' %}" class="card-link">All pickups</a>
+        </div>
+        <div class="card-body">
+            {% for donation in awaiting_assignment %}
+            <div class="request-row">
+                <span class="food-thumb orange"><i class="fa-solid {{ donation.category_icon }}"></i></span>
+                <div class="request-copy">
+                    <strong>{{ donation.food_name }}</strong>
+                    <p>{{ donation.quantity_display }} · {{ donation.pickup_city }} · recipient {{ donation.recipient_ngo.display_name|default:"NGO" }}</p>
+                    <p class="text-danger" style="font-size:.7rem;"><i class="fa-regular fa-clock"></i> <span data-expires-at="{{ donation.expires_at|date:'c' }}">{{ donation.expires_at|date:"d M H:i" }}</span></p>
+                    <div class="request-actions">
+                        <a href="{% url 'admin_assign' donation.pk %}" class="btn btn-sm btn-brand"><i class="fa-solid fa-user-plus"></i> Assign volunteer</a>
+                        <a href="{% url 'donations:detail' donation.pk %}" class="btn btn-sm btn-soft">View donation</a>
+                    </div>
+                </div>
+                <span class="request-quantity">{{ donation.updated_at|timesince }} ago</span>
+            </div>
+            {% empty %}
+            <div class="empty-state" style="padding:1.8rem 0.5rem;">
+                <div class="empty-icon" style="width:52px;height:52px;font-size:1.1rem;"><i class="fa-solid fa-circle-check"></i></div>
+                <h3>Every accepted donation has a volunteer</h3>
+                <p>The pickup pipeline is clear right now.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="card-soft">
+        <div class="card-head">
+            <div>
+                <h2>NGO verification queue</h2>
+                <p>{{ snapshot.unverified_ngos }} pending organisation{{ snapshot.unverified_ngos|pluralize }}</p>
+            </div>
+            <a href="{% url 'accounts:admin_users' %}?status=unverified" class="card-link">View all</a>
+        </div>
+        <div class="card-body">
+            {% for profile in unverified_ngos %}
+            <div class="request-row">
+                <span class="avatar-initials avatar-md">{{ profile.organization_name|slice:":2"|upper }}</span>
+                <div class="request-copy">
+                    <strong>{{ profile.organization_name }}</strong>
+                    <p>{{ profile.user.email }} · {{ profile.user.city|default:"City not set" }}</p>
+                    <div class="request-actions">
+                        <a href="{% url 'accounts:admin_user_detail' profile.user.pk %}" class="btn btn-sm btn-soft">Review</a>
+                        <form method="post" action="{% url 'accounts:verify_ngo' profile.user.pk %}" data-confirm="Verify {{ profile.organization_name }}? They will be able to request food.">
+                            {% csrf_token %}
+                            <input type="hidden" name="next" value="{{ request.path }}">
+                            <button type="submit" class="btn btn-sm btn-forest"><i class="fa-solid fa-check"></i> Verify</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="empty-state" style="padding:1.8rem 0.5rem;">
+                <div class="empty-icon" style="width:52px;height:52px;font-size:1.1rem;"><i class="fa-solid fa-shield-halved"></i></div>
+                <h3>No NGOs waiting</h3>
+                <p>All registered NGOs are verified.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<div class="dash-grid">
+    <div class="card-soft">
+        <div class="card-head">
+            <div>
+                <h2>Recent donations</h2>
+                <p>Latest food entering the platform</p>
+            </div>
+            <a href="{% url 'admin_donations' %}" class="card-link">Manage donations</a>
+        </div>
+        {% if recent_donations %}
+        <div class="table-wrap">
+            <table class="table-app">
+                <thead><tr><th>Food</th><th>Donor</th><th>Quantity</th><th>Status</th><th></th></tr></thead>
+                <tbody>
+                    {% for donation in recent_donations %}
+                    <tr>
+                        <td>
+                            <div class="cell-main">{{ donation.food_name }}</div>
+                            <div class="cell-sub">{{ donation.get_category_display }} · {{ donation.pickup_city }}</div>
+                        </td>
+                        <td><span class="cell-sub">{{ donation.donor.display_name|truncatechars:22 }}</span></td>
+                        <td>{{ donation.quantity_display }}</td>
+                        <td><span class="badge-soft badge-soft-{{ donation.status_css }}">{{ donation.get_status_display }}</span></td>
+                        <td class="cell-actions"><a href="{% url 'donations:detail' donation.pk %}" class="btn btn-sm btn-soft">Open</a></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state"><div class="empty-icon"><i class="fa-solid fa-bowl-food"></i></div><h3>No donations yet</h3><p>Donor listings will appear here.</p></div>
+        {% endif %}
+    </div>
+
+    <div class="card-soft">
+        <div class="card-head">
+            <div>
+                <h2>Recent activity</h2>
+                <p>Audit trail snapshots</p>
+            </div>
+            <a href="{% url 'admin_audit' %}" class="card-link">All activity</a>
+        </div>
+        <div class="card-body">
+            {% for entry in snapshot.recent_audit %}
+            <div class="d-flex gap-2 align-items-start pb-3 mb-3" style="border-bottom:1px solid #f3eee3;">
+                <span class="timeline-dot" style="width:28px;height:28px;"><i class="fa-solid fa-clipboard-list"></i></span>
+                <div style="min-width:0;flex:1;">
+                    <strong style="font-size:.76rem;display:block;color:var(--ink);">{{ entry.get_action_display|default:entry.action|title }}</strong>
+                    <p style="font-size:.7rem;color:var(--muted);margin:0;">{{ entry.description|truncatechars:75 }}</p>
+                    <span class="tiny text-muted">{{ entry.actor.display_name|default:"System" }} · {{ entry.created_at|timesince }} ago</span>
+                </div>
+            </div>
+            {% empty %}
+            <div class="empty-state" style="padding:1.8rem 0.5rem;"><div class="empty-icon" style="width:52px;height:52px;font-size:1.1rem;"><i class="fa-solid fa-clipboard-list"></i></div><h3>No activity recorded</h3><p>Administrative and workflow actions will appear here.</p></div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<div class="dash-grid equal">
+    <div class="card-soft">
+        <div class="card-head">
+            <div>
+                <h2>Open reported issues</h2>
+                <p>{{ snapshot.open_issues }} open or in review</p>
+            </div>
+            <a href="{% url 'support:admin_issues' %}" class="card-link">Manage issues</a>
+        </div>
+        <div class="card-body">
+            {% for issue in open_issues %}
+            <div class="request-row">
+                <span class="food-thumb orange"><i class="fa-solid fa-flag"></i></span>
+                <div class="request-copy">
+                    <strong>{{ issue.subject|truncatechars:44 }}</strong>
+                    <p>{{ issue.get_category_display }} · {{ issue.reporter.display_name|truncatechars:20 }}</p>
+                    <span class="badge-soft badge-soft-{{ issue.status_css }}">{{ issue.get_status_display }}</span>
+                </div>
+                <span class="request-quantity">{{ issue.created_at|timesince }} ago</span>
+            </div>
+            {% empty %}
+            <div class="empty-state" style="padding:1.8rem 0.5rem;"><div class="empty-icon" style="width:52px;height:52px;font-size:1.1rem;"><i class="fa-solid fa-flag"></i></div><h3>No open issues</h3><p>Reported problems will appear here for review.</p></div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="card-soft">
+        <div class="card-head">
+            <div>
+                <h2>Newest users</h2>
+                <p>Latest accounts on the platform</p>
+            </div>
+            <a href="{% url 'accounts:admin_users' %}" class="card-link">Manage users</a>
+        </div>
+        <div class="card-body">
+            {% for account in recent_users %}
+            <a href="{% url 'accounts:admin_user_detail' account.pk %}" class="d-flex align-items-center gap-3 pb-3 mb-3" style="border-bottom:1px solid #f3eee3;">
+                <span class="avatar-initials avatar-sm">{{ account.initials }}</span>
+                <span style="min-width:0;flex:1;">
+                    <strong style="display:block;font-size:.78rem;color:var(--ink);">{{ account.display_name|truncatechars:26 }}</strong>
+                    <span style="font-size:.68rem;color:var(--muted);">{{ account.get_role_display }} · {{ account.date_joined|date:"d M" }}</span>
+                </span>
+                <span class="badge-soft badge-soft-{% if account.is_blocked %}danger{% elif account.is_active %}success{% else %}secondary{% endif %}">{% if account.is_blocked %}Blocked{% else %}Active{% endif %}</span>
+            </a>
+            {% empty %}
+            <p class="text-muted mb-0">No accounts found.</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

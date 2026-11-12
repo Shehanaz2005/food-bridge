@@ -1,0 +1,212 @@
+{% extends "dashboard_base.html" %}
+{% load static %}
+
+{% block title %}Donor Dashboard · Food Bridge{% endblock %}
+
+{% block dash_content %}
+<section class="welcome-banner">
+    <div>
+        <span class="eyebrow on-dark"><i class="fa-solid fa-utensils"></i> Donor workspace</span>
+        <h2>Hello, {{ user.display_name }}.</h2>
+        <p>Your surplus can become someone's next meal. Keep your listings fresh and respond to NGO requests quickly.</p>
+    </div>
+    <div class="banner-actions">
+        <a href="{% url 'donations:create' %}" class="btn btn-brand"><i class="fa-solid fa-plus"></i> Add donation</a>
+        <a href="{% url 'donations:list' %}" class="btn btn-soft"><i class="fa-solid fa-list"></i> My donations</a>
+    </div>
+</section>
+
+<div class="stat-grid">
+    <div class="stat-card">
+        <div class="stat-top">
+            <span class="stat-icon"><i class="fa-solid fa-bowl-food"></i></span>
+            <span class="badge-soft badge-soft-success">Live</span>
+        </div>
+        <div class="stat-value">{{ stats.active }}</div>
+        <div class="stat-label">Active donations</div>
+        <span class="stat-note muted">In the rescue workflow</span>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <span class="stat-icon orange"><i class="fa-solid fa-hand-holding-heart"></i></span>
+            {% if stats.pending_requests %}<span class="badge-soft badge-soft-warning">Action needed</span>{% endif %}
+        </div>
+        <div class="stat-value">{{ stats.pending_requests }}</div>
+        <div class="stat-label">Pending NGO requests</div>
+        <span class="stat-note {% if stats.pending_requests %}warn{% else %}muted{% endif %}">
+            {% if stats.pending_requests %}Review and respond{% else %}Nothing waiting{% endif %}
+        </span>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <span class="stat-icon info"><i class="fa-solid fa-truck-fast"></i></span>
+        </div>
+        <div class="stat-value">{{ stats.completed }}</div>
+        <div class="stat-label">Completed donations</div>
+        <span class="stat-note muted">Receipt confirmed by NGOs</span>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <span class="stat-icon purple"><i class="fa-solid fa-weight-hanging"></i></span>
+        </div>
+        <div class="stat-value">{{ stats.total }}</div>
+        <div class="stat-label">Total donations created</div>
+        <div class="d-flex flex-wrap gap-2 mt-1">
+            {% for quantity in stats.quantity %}
+            <span class="badge-soft badge-soft-success">{{ quantity.formatted }} {{ quantity.label }}</span>
+            {% empty %}
+            <span class="stat-note muted">No delivered quantity yet</span>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+{% if expiring_donations %}
+<div class="alert-app warning mb-3">
+    <i class="fa-solid fa-triangle-exclamation"></i>
+    <div>
+        <strong>Food nearing expiry.</strong>
+        {{ expiring_donations|length }} donation{{ expiring_donations|length|pluralize }} need attention within the next 12 hours. Open the listing to review requests quickly.
+    </div>
+    <a href="{% url 'donations:list' %}" class="btn btn-sm btn-brand ms-auto">Review</a>
+</div>
+{% endif %}
+
+<div class="dash-grid">
+    <div class="card-soft">
+        <div class="card-head">
+            <div>
+                <h2>Recent donations</h2>
+                <p>Your latest food listings and their current stage</p>
+            </div>
+            <a href="{% url 'donations:list' %}" class="card-link">View all <i class="fa-solid fa-arrow-right"></i></a>
+        </div>
+        {% if recent_donations %}
+        <div class="table-wrap">
+            <table class="table-app">
+                <thead><tr><th>Food</th><th>Quantity</th><th>Status</th><th>Expires</th><th></th></tr></thead>
+                <tbody>
+                    {% for donation in recent_donations %}
+                    <tr>
+                        <td>
+                            <div class="food-cell">
+                                <span class="food-thumb {% cycle '' 'orange' %}">
+                                    {% if donation.image %}<img src="{{ donation.image.url }}" alt="">{% else %}<i class="fa-solid {{ donation.category_icon }}"></i>{% endif %}
+                                </span>
+                                <div>
+                                    <div class="cell-main">{{ donation.food_name }}</div>
+                                    <div class="cell-sub">{{ donation.get_category_display }} · {{ donation.pickup_city }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>{{ donation.quantity_display }}</td>
+                        <td><span class="badge-soft badge-soft-{{ donation.status_css }}">{{ donation.get_status_display }}</span></td>
+                        <td><span data-expires-at="{{ donation.expires_at|date:'c' }}" style="font-size:.72rem;">{{ donation.expires_at|date:"d M, H:i" }}</span></td>
+                        <td class="cell-actions"><a href="{% url 'donations:detail' donation.pk %}" class="btn btn-sm btn-soft">Open</a></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-icon"><i class="fa-solid fa-bowl-food"></i></div>
+            <h3>No donations yet</h3>
+            <p>Create your first listing. Nearby NGOs will see it in their smart matches immediately.</p>
+            <a href="{% url 'donations:create' %}" class="btn btn-brand btn-sm"><i class="fa-solid fa-plus"></i> Add your first donation</a>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="card-soft">
+        <div class="card-head">
+            <div>
+                <h2>Requests waiting for you</h2>
+                <p>{{ request_count }} total request{{ request_count|pluralize }}</p>
+            </div>
+        </div>
+        <div class="card-body">
+            {% for request in pending_requests %}
+            <div class="request-row">
+                <span class="avatar-initials avatar-md">{{ request.ngo.initials }}</span>
+                <div class="request-copy">
+                    <strong>{{ request.ngo.display_name }}</strong>
+                    <p>{{ request.quantity }} {{ request.donation.get_unit_display }} of {{ request.donation.food_name }}</p>
+                    <div class="request-actions">
+                        <a href="{% url 'donations:detail' request.donation.pk %}" class="btn btn-sm btn-forest">Review request</a>
+                    </div>
+                </div>
+                <span class="request-quantity">{{ request.created_at|timesince }} ago</span>
+            </div>
+            {% empty %}
+            <div class="empty-state" style="padding:1.8rem 0.5rem;">
+                <div class="empty-icon" style="width:52px;height:52px;font-size:1.1rem;"><i class="fa-regular fa-bell"></i></div>
+                <h3>No pending requests</h3>
+                <p>When an NGO requests your food, it will appear here and in your notifications.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<div class="dash-grid equal">
+    <div class="card-soft">
+        <div class="card-head">
+            <div>
+                <h2>Recent activity</h2>
+                <p>Updates from your donation journeys</p>
+            </div>
+        </div>
+        <div class="card-body">
+            {% if recent_activity %}
+            <div class="timeline">
+                {% for event in recent_activity %}
+                <div class="timeline-item {% if forloop.first %}latest{% endif %}">
+                    <span class="timeline-dot"><i class="fa-solid fa-route"></i></span>
+                    <div class="timeline-copy">
+                        <strong>{{ event.title }}</strong>
+                        <p>{{ event.description|default:event.donation.food_name }}</p>
+                        <span>{{ event.created_at|timesince }} ago · {{ event.donation.food_name }}</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-state" style="padding:1.8rem 0.5rem;">
+                <div class="empty-icon" style="width:52px;height:52px;font-size:1.1rem;"><i class="fa-solid fa-route"></i></div>
+                <h3>Your journey starts here</h3>
+                <p>Activity appears as requests, pickups, and deliveries move forward.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="card-soft">
+        <div class="card-head">
+            <div>
+                <h2>Expiring soon</h2>
+                <p>Act quickly to avoid food waste</p>
+            </div>
+            <a href="{% url 'donations:list' %}" class="card-link">All donations</a>
+        </div>
+        <div class="card-body">
+            {% for donation in expiring_donations %}
+            <a href="{% url 'donations:detail' donation.pk %}" class="d-flex align-items-center gap-3 pb-3 mb-3" style="border-bottom:1px solid #f3eee3;">
+                <span class="food-thumb orange"><i class="fa-solid {{ donation.category_icon }}"></i></span>
+                <span style="min-width:0;flex:1;">
+                    <strong style="display:block;font-size:.8rem;color:var(--ink);">{{ donation.food_name|truncatechars:26 }}</strong>
+                    <span style="font-size:.7rem;color:var(--muted);">{{ donation.quantity_display }} · {{ donation.get_status_display }}</span>
+                </span>
+                <span class="badge-soft badge-soft-warning" data-expires-at="{{ donation.expires_at|date:'c' }}">{{ donation.expires_at|date:"H:i" }}</span>
+            </a>
+            {% empty %}
+            <div class="empty-state" style="padding:1.8rem 0.5rem;">
+                <div class="empty-icon" style="width:52px;height:52px;font-size:1.1rem;"><i class="fa-solid fa-hourglass-half"></i></div>
+                <h3>Nothing expiring soon</h3>
+                <p>Your active food has a comfortable shelf life right now.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

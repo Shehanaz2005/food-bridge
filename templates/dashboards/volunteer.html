@@ -1,0 +1,181 @@
+{% extends "dashboard_base.html" %}
+{% load static %}
+
+{% block title %}Volunteer Dashboard · Food Bridge{% endblock %}
+
+{% block dash_content %}
+<section class="welcome-banner">
+    <div>
+        <span class="eyebrow on-dark"><i class="fa-solid fa-person-walking"></i> Volunteer hub</span>
+        <h2>Ready to move some food, {{ user.display_name }}?</h2>
+        <p>Accept a pickup, collect safely before expiry, and deliver to the NGO. Every status update keeps donors and recipients in the loop.</p>
+    </div>
+    <div class="banner-actions">
+        <a href="{% url 'volunteers:assignments' %}" class="btn btn-brand"><i class="fa-solid fa-truck-fast"></i> My assignments</a>
+        <a href="{% url 'accounts:profile' %}" class="btn btn-soft"><i class="fa-solid fa-user"></i> Availability</a>
+    </div>
+</section>
+
+<div class="availability-card">
+    <div class="d-flex align-items-center gap-3">
+        <span class="stat-icon {% if profile.is_available %}{% else %}danger{% endif %}"><i class="fa-solid fa-toggle-{% if profile.is_available %}on{% else %}off{% endif %}"></i></span>
+        <div class="availability-copy">
+            <strong><span class="status-dot {% if profile.is_available %}on{% else %}off{% endif %}"></span>{% if profile.is_available %}Available for pickups{% else %}Currently unavailable{% endif %}</strong>
+            <span>{% if profile.is_available %}Administrators can assign new pickups to you.{% else %}New assignments are paused until you mark yourself available.{% endif %}</span>
+        </div>
+    </div>
+    <form method="post" action="{% url 'accounts:toggle_availability' %}">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ request.path }}">
+        <button type="submit" class="btn btn-sm {% if profile.is_available %}btn-danger-soft{% else %}btn-forest{% endif %}">
+            {% if profile.is_available %}<i class="fa-solid fa-pause"></i> Mark unavailable{% else %}<i class="fa-solid fa-play"></i> Mark available{% endif %}
+        </button>
+    </form>
+</div>
+
+<div class="stat-grid">
+    <div class="stat-card">
+        <div class="stat-top"><span class="stat-icon orange"><i class="fa-solid fa-inbox"></i></span>{% if stats.offered %}<span class="badge-soft badge-soft-warning">New</span>{% endif %}</div>
+        <div class="stat-value">{{ stats.offered }}</div>
+        <div class="stat-label">New pickup offers</div>
+        <span class="stat-note muted">Waiting for your response</span>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top"><span class="stat-icon"><i class="fa-solid fa-truck-fast"></i></span></div>
+        <div class="stat-value">{{ stats.active }}</div>
+        <div class="stat-label">Active deliveries</div>
+        <span class="stat-note muted">Accepted or picked up</span>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top"><span class="stat-icon info"><i class="fa-solid fa-circle-check"></i></span></div>
+        <div class="stat-value">{{ stats.completed }}</div>
+        <div class="stat-label">Completed deliveries</div>
+        <span class="stat-note muted">Confirmed by NGOs</span>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top"><span class="stat-icon purple"><i class="fa-solid fa-weight-hanging"></i></span></div>
+        <div class="stat-value">{{ stats.total }}</div>
+        <div class="stat-label">Total assignments</div>
+        <div class="d-flex flex-wrap gap-2 mt-1">
+            {% for quantity in stats.delivered_quantity %}
+            <span class="badge-soft badge-soft-success">{{ quantity.formatted }} {{ quantity.label }}</span>
+            {% empty %}
+            <span class="stat-note muted">No delivered quantity yet</span>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+{% if offered_assignments %}
+<div class="card-soft mb-3">
+    <div class="card-head">
+        <div>
+            <h2>New pickup offers</h2>
+            <p>Review the details, then accept or decline</p>
+        </div>
+        <span class="badge-soft badge-soft-warning">{{ offered_assignments|length }} waiting</span>
+    </div>
+    <div class="card-body">
+        <div class="donation-grid">
+            {% for assignment in offered_assignments %}
+            <article class="donation-card">
+                <div class="donation-media cat-{{ assignment.donation.category }}">
+                    {% if assignment.donation.image %}<img src="{{ assignment.donation.image.url }}" alt="">{% else %}<i class="fa-solid {{ assignment.donation.category_icon }}"></i>{% endif %}
+                    <div class="donation-badges">
+                        <span class="d-meta-badge"><i class="fa-solid fa-user-group"></i> New offer</span>
+                        <span class="d-meta-badge expiry"><i class="fa-regular fa-clock"></i> <span data-expires-at="{{ assignment.donation.expires_at|date:'c' }}">{{ assignment.donation.expires_at|date:"d M" }}</span></span>
+                    </div>
+                </div>
+                <div class="donation-body">
+                    <div class="donation-category">{{ assignment.donation.get_category_display }}</div>
+                    <h3>{{ assignment.donation.food_name }}</h3>
+                    <div class="donation-info">
+                        <span><i class="fa-solid fa-weight-hanging"></i>{{ assignment.donation.quantity_display }}</span>
+                        <span><i class="fa-solid fa-location-dot"></i>{{ assignment.donation.pickup_city }}</span>
+                        <span><i class="fa-solid fa-utensils"></i>{{ assignment.donation.donor.display_name|truncatechars:26 }}</span>
+                    </div>
+                    <div class="d-flex gap-2 mt-auto">
+                        <a href="{% url 'volunteers:assignment_detail' assignment.pk %}" class="btn btn-sm btn-forest flex-fill">Review</a>
+                        <form method="post" action="{% url 'volunteers:accept' assignment.pk %}" class="flex-fill" data-submit-once>
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-brand w-100">Accept</button>
+                        </form>
+                    </div>
+                </div>
+            </article>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="dash-grid">
+    <div class="card-soft">
+        <div class="card-head">
+            <div>
+                <h2>Active deliveries</h2>
+                <p>Update pickup and delivery status here</p>
+            </div>
+            <a href="{% url 'volunteers:assignments' %}" class="card-link">All assignments <i class="fa-solid fa-arrow-right"></i></a>
+        </div>
+        {% if active_assignments %}
+        <div class="table-wrap">
+            <table class="table-app">
+                <thead><tr><th>Food</th><th>Route</th><th>Status</th><th>Expiry</th><th></th></tr></thead>
+                <tbody>
+                    {% for assignment in active_assignments %}
+                    <tr>
+                        <td>
+                            <div class="cell-main">{{ assignment.donation.food_name }}</div>
+                            <div class="cell-sub">{{ assignment.donation.quantity_display }}</div>
+                        </td>
+                        <td>
+                            <div class="cell-sub"><i class="fa-solid fa-utensils me-1"></i>{{ assignment.donation.pickup_city }}</div>
+                            <div class="cell-sub"><i class="fa-solid fa-house-chimney-user me-1"></i>{{ assignment.donation.recipient_ngo.display_name|default:"NGO"|truncatechars:20 }}</div>
+                        </td>
+                        <td><span class="badge-soft badge-soft-{{ assignment.status_css }}">{{ assignment.get_status_display }}</span></td>
+                        <td><span data-expires-at="{{ assignment.donation.expires_at|date:'c' }}" style="font-size:.7rem;">{{ assignment.donation.expires_at|date:"d M H:i" }}</span></td>
+                        <td class="cell-actions"><a href="{% url 'volunteers:assignment_detail' assignment.pk %}" class="btn btn-sm btn-soft">Open</a></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-icon"><i class="fa-solid fa-truck-fast"></i></div>
+            <h3>No active deliveries</h3>
+            <p>When you accept a pickup offer, it will appear here with donor and NGO details.</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="card-soft">
+        <div class="card-head">
+            <div>
+                <h2>Completed recently</h2>
+                <p>Thank you for showing up</p>
+            </div>
+            <a href="{% url 'volunteers:history' %}" class="card-link">History</a>
+        </div>
+        <div class="card-body">
+            {% for assignment in completed_assignments %}
+            <a href="{% url 'volunteers:assignment_detail' assignment.pk %}" class="d-flex align-items-center gap-3 pb-3 mb-3" style="border-bottom:1px solid #f3eee3;">
+                <span class="food-thumb"><i class="fa-solid fa-circle-check"></i></span>
+                <span style="min-width:0;flex:1;">
+                    <strong style="display:block;font-size:.8rem;color:var(--ink);">{{ assignment.donation.food_name|truncatechars:24 }}</strong>
+                    <span style="font-size:.69rem;color:var(--muted);">{{ assignment.donation.quantity_display }} · {{ assignment.completed_at|date:"d M Y" }}</span>
+                </span>
+                <i class="fa-solid fa-arrow-right tiny text-muted"></i>
+            </a>
+            {% empty %}
+            <div class="empty-state" style="padding:1.8rem 0.5rem;">
+                <div class="empty-icon" style="width:52px;height:52px;font-size:1.1rem;"><i class="fa-solid fa-flag-checkered"></i></div>
+                <h3>No completed deliveries yet</h3>
+                <p>Your completed pickups will build your volunteer history.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,53 @@
+{% if user.is_staff %}
+<nav class="sidebar-nav" aria-label="Admin navigation">
+    <span class="nav-section-label">Overview</span>
+    <a href="{% url 'accounts:admin_dashboard' %}" class="sidebar-link {% if active_nav == 'dashboard' %}active{% endif %}"><i class="fa-solid fa-gauge-high"></i><span>Dashboard</span></a>
+    <a href="{% url 'analytics:admin_analytics' %}" class="sidebar-link {% if active_nav == 'analytics' %}active{% endif %}"><i class="fa-solid fa-chart-simple"></i><span>Impact analytics</span></a>
+    <span class="nav-section-label">Operations</span>
+    <a href="{% url 'accounts:admin_users' %}" class="sidebar-link {% if active_nav == 'users' %}active{% endif %}"><i class="fa-solid fa-users-gear"></i><span>Manage users</span></a>
+    <a href="{% url 'admin_donations' %}" class="sidebar-link {% if active_nav == 'donations' %}active{% endif %}"><i class="fa-solid fa-bowl-food"></i><span>Food donations</span></a>
+    <a href="{% url 'admin_requests' %}" class="sidebar-link {% if active_nav == 'requests' %}active{% endif %}"><i class="fa-solid fa-hand-holding-heart"></i><span>Requests</span></a>
+    <a href="{% url 'admin_assignments' %}" class="sidebar-link {% if active_nav == 'assignments' %}active{% endif %}"><i class="fa-solid fa-truck-fast"></i><span>Pickups &amp; deliveries</span></a>
+    <a href="{% url 'support:admin_issues' %}" class="sidebar-link {% if active_nav == 'issues' %}active{% endif %}"><i class="fa-solid fa-flag"></i><span>Reported issues</span></a>
+    <span class="nav-section-label">Governance</span>
+    <a href="{% url 'admin_audit' %}" class="sidebar-link {% if active_nav == 'audit' %}active{% endif %}"><i class="fa-solid fa-clipboard-list"></i><span>Audit trail</span></a>
+    <a href="{% url 'notifications:list' %}" class="sidebar-link {% if active_nav == 'notifications' %}active{% endif %}"><i class="fa-regular fa-bell"></i><span>Notifications</span>{% if unread_notifications_count %}<span class="sidebar-count">{{ unread_notifications_count }}</span>{% endif %}</a>
+    <a href="{% url 'accounts:profile' %}" class="sidebar-link {% if active_nav == 'profile' %}active{% endif %}"><i class="fa-solid fa-user"></i><span>My profile</span></a>
+</nav>
+{% elif user.role == 'ngo' %}
+<nav class="sidebar-nav" aria-label="NGO navigation">
+    <span class="nav-section-label">Workspace</span>
+    <a href="{% url 'accounts:ngo_dashboard' %}" class="sidebar-link {% if active_nav == 'dashboard' %}active{% endif %}"><i class="fa-solid fa-gauge-high"></i><span>Dashboard</span></a>
+    <a href="{% url 'donations:browse' %}" class="sidebar-link {% if active_nav == 'browse' %}active{% endif %}"><i class="fa-solid fa-magnifying-glass"></i><span>Find food</span></a>
+    <a href="{% url 'donations:browse' %}?sort=match" class="sidebar-link sidebar-sub"><i class="fa-solid fa-wand-magic-sparkles"></i><span>Smart matches</span></a>
+    <a href="{% url 'donations:requests' %}" class="sidebar-link {% if active_nav == 'requests' %}active{% endif %}"><i class="fa-solid fa-hand-holding-heart"></i><span>My requests</span></a>
+    <a href="{% url 'donations:history' %}" class="sidebar-link {% if active_nav == 'history' %}active{% endif %}"><i class="fa-solid fa-clock-rotate-left"></i><span>Donation history</span></a>
+    <span class="nav-section-label">Account</span>
+    <a href="{% url 'notifications:list' %}" class="sidebar-link {% if active_nav == 'notifications' %}active{% endif %}"><i class="fa-regular fa-bell"></i><span>Notifications</span>{% if unread_notifications_count %}<span class="sidebar-count">{{ unread_notifications_count }}</span>{% endif %}</a>
+    <a href="{% url 'accounts:profile' %}" class="sidebar-link {% if active_nav == 'profile' %}active{% endif %}"><i class="fa-solid fa-user"></i><span>NGO profile</span></a>
+    <a href="{% url 'support:report_issue' %}" class="sidebar-link {% if active_nav == 'support' %}active{% endif %}"><i class="fa-solid fa-flag"></i><span>Report an issue</span></a>
+</nav>
+{% elif user.role == 'volunteer' %}
+<nav class="sidebar-nav" aria-label="Volunteer navigation">
+    <span class="nav-section-label">Deliveries</span>
+    <a href="{% url 'accounts:volunteer_dashboard' %}" class="sidebar-link {% if active_nav == 'dashboard' %}active{% endif %}"><i class="fa-solid fa-gauge-high"></i><span>Dashboard</span></a>
+    <a href="{% url 'volunteers:assignments' %}" class="sidebar-link {% if active_nav == 'assignments' %}active{% endif %}"><i class="fa-solid fa-truck-fast"></i><span>Pickup assignments</span></a>
+    <a href="{% url 'volunteers:history' %}" class="sidebar-link {% if active_nav == 'history' %}active{% endif %}"><i class="fa-solid fa-clock-rotate-left"></i><span>Activity history</span></a>
+    <span class="nav-section-label">Account</span>
+    <a href="{% url 'notifications:list' %}" class="sidebar-link {% if active_nav == 'notifications' %}active{% endif %}"><i class="fa-regular fa-bell"></i><span>Notifications</span>{% if unread_notifications_count %}<span class="sidebar-count">{{ unread_notifications_count }}</span>{% endif %}</a>
+    <a href="{% url 'accounts:profile' %}" class="sidebar-link {% if active_nav == 'profile' %}active{% endif %}"><i class="fa-solid fa-user"></i><span>Volunteer profile</span></a>
+    <a href="{% url 'support:report_issue' %}" class="sidebar-link {% if active_nav == 'support' %}active{% endif %}"><i class="fa-solid fa-flag"></i><span>Report an issue</span></a>
+</nav>
+{% else %}
+<nav class="sidebar-nav" aria-label="Donor navigation">
+    <span class="nav-section-label">Donations</span>
+    <a href="{% url 'accounts:donor_dashboard' %}" class="sidebar-link {% if active_nav == 'dashboard' %}active{% endif %}"><i class="fa-solid fa-gauge-high"></i><span>Dashboard</span></a>
+    <a href="{% url 'donations:create' %}" class="sidebar-link {% if active_nav == 'donate' %}active{% endif %}"><i class="fa-solid fa-plus"></i><span>Add donation</span></a>
+    <a href="{% url 'donations:list' %}" class="sidebar-link {% if active_nav == 'donations' %}active{% endif %}"><i class="fa-solid fa-bowl-food"></i><span>My donations</span></a>
+    <a href="{% url 'donations:history' %}" class="sidebar-link {% if active_nav == 'history' %}active{% endif %}"><i class="fa-solid fa-clock-rotate-left"></i><span>Donation history</span></a>
+    <span class="nav-section-label">Account</span>
+    <a href="{% url 'notifications:list' %}" class="sidebar-link {% if active_nav == 'notifications' %}active{% endif %}"><i class="fa-regular fa-bell"></i><span>Notifications</span>{% if unread_notifications_count %}<span class="sidebar-count">{{ unread_notifications_count }}</span>{% endif %}</a>
+    <a href="{% url 'accounts:profile' %}" class="sidebar-link {% if active_nav == 'profile' %}active{% endif %}"><i class="fa-solid fa-user"></i><span>My profile</span></a>
+    <a href="{% url 'support:report_issue' %}" class="sidebar-link {% if active_nav == 'support' %}active{% endif %}"><i class="fa-solid fa-flag"></i><span>Report an issue</span></a>
+</nav>
+{% endif %}

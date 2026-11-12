@@ -1,0 +1,244 @@
+{% extends "dashboard_base.html" %}
+{% load static %}
+
+{% block title %}Impact analytics · Food Bridge{% endblock %}
+
+{% block dash_content %}
+<div class="welcome-banner">
+    <div>
+        <span class="eyebrow on-dark"><i class="fa-solid fa-chart-simple"></i> Live data</span>
+        <h2>Platform impact, measured honestly.</h2>
+        <p>Every figure below comes from real Food Bridge records: donations created, deliveries confirmed by NGOs, and quantities rescued. No estimates, no placeholder statistics.</p>
+    </div>
+    <div class="banner-actions">
+        <a href="{% url 'analytics:impact' %}" class="btn btn-soft"><i class="fa-solid fa-globe"></i> Public impact page</a>
+    </div>
+</div>
+
+<div class="stat-grid">
+    <div class="stat-card">
+        <div class="stat-top"><span class="stat-icon"><i class="fa-solid fa-bowl-food"></i></span></div>
+        <div class="stat-value">{{ overview.total_donations }}</div>
+        <div class="stat-label">Total donations</div>
+        <span class="stat-note muted">{{ snapshot.active_deliveries }} active deliver{{ snapshot.active_deliveries|pluralize:"y,ies" }}</span>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top"><span class="stat-icon orange"><i class="fa-solid fa-truck-fast"></i></span></div>
+        <div class="stat-value">{{ overview.completed_deliveries }}</div>
+        <div class="stat-label">Confirmed deliveries</div>
+        <span class="stat-note muted">{{ overview.active_requests }} active request{{ overview.active_requests|pluralize }}</span>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top"><span class="stat-icon info"><i class="fa-solid fa-house-chimney-user"></i></span></div>
+        <div class="stat-value">{{ overview.ngos_connected }}</div>
+        <div class="stat-label">Verified NGOs</div>
+        <span class="stat-note {% if snapshot.unverified_ngos %}warn{% else %}muted{% endif %}">{{ snapshot.unverified_ngos }} awaiting verification</span>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top"><span class="stat-icon purple"><i class="fa-solid fa-people-group"></i></span></div>
+        <div class="stat-value">{{ overview.active_volunteers }}</div>
+        <div class="stat-label">Available volunteers</div>
+        <span class="stat-note muted">{{ overview.active_donors }} active donor{{ overview.active_donors|pluralize }}</span>
+    </div>
+</div>
+
+<div class="dash-grid equal">
+    <div class="card-soft chart-card">
+        <div class="card-head">
+            <div>
+                <h2>Donations by category</h2>
+                <p>Share of all listings created on Food Bridge</p>
+            </div>
+            <span class="badge-soft badge-soft-success">{{ overview.total_donations }} total</span>
+        </div>
+        <div class="card-body">
+            <div class="category-bars">
+                {% for category in categories %}
+                <div class="category-row">
+                    <span class="category-name"><i class="fa-solid {{ category.icon }}"></i>{{ category.label }}</span>
+                    <div class="category-track"><div class="category-fill" style="width: {{ category.percentage }}%;"></div></div>
+                    <span class="category-value">{{ category.total }}</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% if not overview.total_donations %}
+            <p class="text-muted mb-0 mt-3" style="font-size:.78rem;">Category data will appear once the first donation is created.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="card-soft chart-card">
+        <div class="card-head">
+            <div>
+                <h2>Monthly donation trend</h2>
+                <p>Created vs. completed donations over 12 months</p>
+            </div>
+            <div class="chart-legend">
+                <span><span class="legend-dot forest"></span>Created</span>
+                <span><span class="legend-dot orange"></span>Completed</span>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="bar-chart">
+                {% for point in trends %}
+                <div class="bar-group">
+                    <div class="bar-pair">
+                        <div class="bar" style="height: {% widthratio point.created scale 100 %}%;" title="{{ point.created }} created"></div>
+                        <div class="bar alt" style="height: {% widthratio point.completed scale 100 %}%;" title="{{ point.completed }} completed"></div>
+                    </div>
+                    <div class="bar-label">{{ point.label }}</div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="dash-grid equal">
+    <div class="card-soft">
+        <div class="card-head">
+            <div>
+                <h2>Food successfully delivered</h2>
+                <p>Confirmed deliveries only, grouped by unit</p>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                {% for quantity in overview.delivered_quantity %}
+                <div class="col-sm-6">
+                    <div style="background: var(--forest-50); border:1px solid #d1fae5; border-radius:14px; padding:1rem;">
+                        <div style="font-family:var(--font-display);font-size:1.5rem;font-weight:800;color:var(--forest-800);">{{ quantity.formatted }}</div>
+                        <div class="stat-label">{{ quantity.label }}</div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="col-12">
+                    <div class="empty-state" style="padding:1.5rem;">
+                        <div class="empty-icon"><i class="fa-solid fa-truck-fast"></i></div>
+                        <h3>No confirmed deliveries yet</h3>
+                        <p>Once an NGO confirms receipt, the rescued quantity will appear here.</p>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            <hr class="soft-divider">
+            <div class="d-flex justify-content-between align-items-center">
+                <span style="font-size:.78rem;color:var(--muted);">Donations recorded</span>
+                <strong style="font-family:var(--font-display);">{{ overview.total_donations }}</strong>
+            </div>
+        </div>
+    </div>
+
+    <div class="card-soft">
+        <div class="card-head">
+            <div>
+                <h2>Food donated</h2>
+                <p>All non-cancelled listings, grouped by unit</p>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                {% for quantity in overview.donated_quantity %}
+                <div class="col-sm-6">
+                    <div style="background: var(--cream); border:1px solid var(--line); border-radius:14px; padding:1rem;">
+                        <div style="font-family:var(--font-display);font-size:1.5rem;font-weight:800;">{{ quantity.formatted }}</div>
+                        <div class="stat-label">{{ quantity.label }}</div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="col-12"><p class="text-muted mb-0" style="font-size:.82rem;">No donations recorded yet.</p></div>
+                {% endfor %}
+            </div>
+            <hr class="soft-divider">
+            <div class="d-flex justify-content-between align-items-center">
+                <span style="font-size:.78rem;color:var(--muted);">Total registered users</span>
+                <strong style="font-family:var(--font-display);">{{ snapshot.total_users }}</strong>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="dash-grid equal">
+    <div class="card-soft">
+        <div class="card-head">
+            <div>
+                <h2>Top donor partners</h2>
+                <p>Ranked by completed donations</p>
+            </div>
+            <a href="{% url 'accounts:admin_users' %}?role=donor" class="card-link">All donors</a>
+        </div>
+        {% if top_donors %}
+        <div class="table-wrap">
+            <table class="table-app">
+                <thead><tr><th>Donor</th><th>Completed</th><th>All listings</th><th></th></tr></thead>
+                <tbody>
+                    {% for donor in top_donors %}
+                    <tr>
+                        <td>
+                            <div class="avatar-cell">
+                                <span class="avatar-initials avatar-sm">{{ donor.initials }}</span>
+                                <div>
+                                    <strong>{{ donor.display_name|truncatechars:24 }}</strong>
+                                    <span>{{ donor.city|default:"City not set" }}</span>
+                                </div>
+                            </div>
+                        </td>
+                        <td><span class="badge-soft badge-soft-success">{{ donor.completed }}</span></td>
+                        <td>{{ donor.total }}</td>
+                        <td class="cell-actions"><a href="{% url 'accounts:admin_user_detail' donor.pk %}" class="btn btn-sm btn-soft">View</a></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state" style="padding:2rem 1rem;">
+            <div class="empty-icon" style="width:52px;height:52px;font-size:1.1rem;"><i class="fa-solid fa-hand-holding-heart"></i></div>
+            <h3>No completed donations yet</h3>
+            <p>Donor rankings appear after the first confirmed delivery.</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="card-soft">
+        <div class="card-head">
+            <div>
+                <h2>Top NGO partners</h2>
+                <p>Ranked by completed receipts</p>
+            </div>
+            <a href="{% url 'accounts:admin_users' %}?role=ngo" class="card-link">All NGOs</a>
+        </div>
+        {% if top_ngos %}
+        <div class="table-wrap">
+            <table class="table-app">
+                <thead><tr><th>NGO</th><th>Received</th><th>City</th><th></th></tr></thead>
+                <tbody>
+                    {% for ngo in top_ngos %}
+                    <tr>
+                        <td>
+                            <div class="avatar-cell">
+                                <span class="avatar-initials avatar-sm">{{ ngo.initials }}</span>
+                                <div>
+                                    <strong>{{ ngo.display_name|truncatechars:24 }}</strong>
+                                    <span>@{{ ngo.username }}</span>
+                                </div>
+                            </div>
+                        </td>
+                        <td><span class="badge-soft badge-soft-success">{{ ngo.received }}</span></td>
+                        <td><span class="cell-sub">{{ ngo.city|default:"—" }}</span></td>
+                        <td class="cell-actions"><a href="{% url 'accounts:admin_user_detail' ngo.pk %}" class="btn btn-sm btn-soft">View</a></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state" style="padding:2rem 1rem;">
+            <div class="empty-icon" style="width:52px;height:52px;font-size:1.1rem;"><i class="fa-solid fa-house-chimney-user"></i></div>
+            <h3>No completed receipts yet</h3>
+            <p>NGO rankings appear after the first confirmed delivery.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

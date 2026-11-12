@@ -1,0 +1,169 @@
+{% extends "dashboard_base.html" %}
+{% load static %}
+
+{% block title %}History · Food Bridge{% endblock %}
+
+{% block dash_content %}
+<div class="d-flex flex-wrap justify-content-between align-items-end gap-2 mb-3">
+    <div>
+        <span class="eyebrow orange"><i class="fa-solid fa-clock-rotate-left"></i> Archived activity</span>
+        <h2 style="font-size:1.5rem;margin:.6rem 0 .2rem;">{% if user.role == 'donor' %}Donation history{% else %}Request history{% endif %}</h2>
+        <p class="text-muted mb-0" style="font-size:.82rem;">Completed, expired, cancelled, and closed records are kept here for accountability.</p>
+    </div>
+    <a href="{% if user.role == 'donor' %}{% url 'donations:list' %}{% else %}{% url 'donations:requests' %}{% endif %}" class="btn btn-soft">
+        <i class="fa-solid fa-arrow-left"></i> Back to active
+    </a>
+</div>
+
+<div class="stat-grid">
+    {% if user.role == 'donor' %}
+    <div class="stat-card">
+        <div class="stat-top"><span class="stat-icon"><i class="fa-solid fa-bowl-food"></i></span></div>
+        <div class="stat-value">{{ stats.total }}</div>
+        <div class="stat-label">Total donations</div>
+        <span class="stat-note muted">Every listing created</span>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top"><span class="stat-icon info"><i class="fa-solid fa-circle-check"></i></span></div>
+        <div class="stat-value">{{ stats.completed }}</div>
+        <div class="stat-label">Completed rescues</div>
+        <span class="stat-note muted">Confirmed by recipient NGOs</span>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top"><span class="stat-icon orange"><i class="fa-solid fa-hourglass-half"></i></span></div>
+        <div class="stat-value">{{ stats.active }}</div>
+        <div class="stat-label">Still active</div>
+        <span class="stat-note muted">In the current workflow</span>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top"><span class="stat-icon purple"><i class="fa-solid fa-weight-hanging"></i></span></div>
+        <div class="stat-value">{{ stats.completed }}</div>
+        <div class="stat-label">Food rescued</div>
+        <div class="d-flex flex-wrap gap-2 mt-1">
+            {% for quantity in stats.quantity %}
+            <span class="badge-soft badge-soft-success">{{ quantity.formatted }} {{ quantity.label }}</span>
+            {% empty %}
+            <span class="stat-note muted">No completed quantity yet</span>
+            {% endfor %}
+        </div>
+    </div>
+    {% else %}
+    <div class="stat-card">
+        <div class="stat-top"><span class="stat-icon"><i class="fa-solid fa-hand-holding-heart"></i></span></div>
+        <div class="stat-value">{{ stats.requests }}</div>
+        <div class="stat-label">Total requests</div>
+        <span class="stat-note muted">All time</span>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top"><span class="stat-icon info"><i class="fa-solid fa-bowl-rice"></i></span></div>
+        <div class="stat-value">{{ stats.received }}</div>
+        <div class="stat-label">Donations received</div>
+        <span class="stat-note muted">Receipt confirmed</span>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top"><span class="stat-icon orange"><i class="fa-solid fa-hourglass-half"></i></span></div>
+        <div class="stat-value">{{ stats.pending }}</div>
+        <div class="stat-label">Pending now</div>
+        <span class="stat-note muted">Waiting for donors</span>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top"><span class="stat-icon purple"><i class="fa-solid fa-weight-hanging"></i></span></div>
+        <div class="stat-value">{{ stats.received }}</div>
+        <div class="stat-label">Food received</div>
+        <div class="d-flex flex-wrap gap-2 mt-1">
+            {% for quantity in stats.quantity %}
+            <span class="badge-soft badge-soft-success">{{ quantity.formatted }} {{ quantity.label }}</span>
+            {% empty %}
+            <span class="stat-note muted">No received quantity yet</span>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+{% if user.role == 'donor' %}
+<div class="card-soft">
+    <div class="card-head">
+        <div>
+            <h2>Closed donations</h2>
+            <p>Completed, expired, and cancelled listings</p>
+        </div>
+    </div>
+    {% if donations %}
+    <div class="table-wrap">
+        <table class="table-app">
+            <thead><tr><th>Food</th><th>Quantity</th><th>Recipient NGO</th><th>Outcome</th><th>Closed</th><th></th></tr></thead>
+            <tbody>
+                {% for donation in donations %}
+                <tr>
+                    <td>
+                        <div class="food-cell">
+                            <span class="food-thumb {% cycle '' 'orange' %}">
+                                {% if donation.image %}<img src="{{ donation.image.url }}" alt="">{% else %}<i class="fa-solid {{ donation.category_icon }}"></i>{% endif %}
+                            </span>
+                            <div>
+                                <div class="cell-main">{{ donation.food_name }}</div>
+                                <div class="cell-sub">{{ donation.get_category_display }} · {{ donation.pickup_city }}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td>{{ donation.quantity_display }}</td>
+                    <td>{% if donation.recipient_ngo %}{{ donation.recipient_ngo.display_name|truncatechars:24 }}{% else %}<span class="cell-sub">—</span>{% endif %}</td>
+                    <td><span class="badge-soft badge-soft-{{ donation.status_css }}">{{ donation.get_status_display }}</span></td>
+                    <td><span class="cell-sub">{% if donation.completed_at %}{{ donation.completed_at|date:"d M Y" }}{% else %}{{ donation.updated_at|date:"d M Y" }}{% endif %}</span></td>
+                    <td class="cell-actions"><a href="{% url 'donations:detail' donation.pk %}" class="btn btn-sm btn-soft">View</a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-icon"><i class="fa-solid fa-clock-rotate-left"></i></div>
+        <h3>No closed donations yet</h3>
+        <p>Completed, expired, and cancelled donations will be archived here with their final outcome.</p>
+        <a href="{% url 'donations:list' %}" class="btn btn-forest btn-sm">View active donations</a>
+    </div>
+    {% endif %}
+</div>
+{% else %}
+<div class="card-soft">
+    <div class="card-head">
+        <div>
+            <h2>Closed requests</h2>
+            <p>Fulfilled, rejected, cancelled, and expired requests</p>
+        </div>
+    </div>
+    {% if requests %}
+    <div class="table-wrap">
+        <table class="table-app">
+            <thead><tr><th>Food</th><th>Donor</th><th>Quantity</th><th>Outcome</th><th>Note</th><th>Closed</th><th></th></tr></thead>
+            <tbody>
+                {% for item in requests %}
+                <tr>
+                    <td>
+                        <div class="cell-main">{{ item.donation.food_name }}</div>
+                        <div class="cell-sub">{{ item.donation.get_category_display }} · {{ item.donation.pickup_city }}</div>
+                    </td>
+                    <td><span class="cell-sub">{{ item.donation.donor.display_name|truncatechars:22 }}</span></td>
+                    <td>{{ item.quantity }} <span class="cell-sub">{{ item.donation.get_unit_display }}</span></td>
+                    <td><span class="badge-soft badge-soft-{{ item.status_css }}">{{ item.get_status_display }}</span></td>
+                    <td><span class="cell-sub">{{ item.donor_note|default:"—"|truncatechars:46 }}</span></td>
+                    <td><span class="cell-sub">{{ item.updated_at|date:"d M Y" }}</span></td>
+                    <td class="cell-actions"><a href="{% url 'donations:detail' item.donation.pk %}" class="btn btn-sm btn-soft">View</a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-icon"><i class="fa-solid fa-clock-rotate-left"></i></div>
+        <h3>No closed requests yet</h3>
+        <p>Fulfilled, rejected, cancelled, and expired requests will be archived here.</p>
+        <a href="{% url 'donations:requests' %}" class="btn btn-forest btn-sm">View active requests</a>
+    </div>
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}

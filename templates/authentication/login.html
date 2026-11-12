@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Sign in · Food Bridge{% endblock %}
+
+{% block content %}
+<section class="auth-page">
+    <div class="container">
+        <div class="auth-shell">
+            <aside class="auth-aside">
+                {% include "partials/logo.html" %}
+                <h2>Welcome back to the bridge.</h2>
+                <p>Sign in to manage donations, coordinate pickups, or keep surplus food moving to the people who need it.</p>
+                <div class="auth-points">
+                    <div class="auth-point">
+                        <i class="fa-solid fa-bowl-food"></i>
+                        <div><strong>Donors</strong><span>Manage listings and request decisions</span></div>
+                    </div>
+                    <div class="auth-point">
+                        <i class="fa-solid fa-house-chimney-user"></i>
+                        <div><strong>NGOs</strong><span>Find matched food and track deliveries</span></div>
+                    </div>
+                    <div class="auth-point">
+                        <i class="fa-solid fa-truck-fast"></i>
+                        <div><strong>Volunteers</strong><span>Accept assignments and update the journey</span></div>
+                    </div>
+                </div>
+                <div class="auth-aside-note"><i class="fa-solid fa-shield-heart"></i> Secure sessions, role-based access, and expiry safety built in.</div>
+            </aside>
+
+            <div class="auth-main">
+                <div class="auth-mobile-brand">{% include "partials/logo.html" %}</div>
+                <h1 class="auth-title">Sign in</h1>
+                <p class="auth-sub">Use your username or email address to continue.</p>
+
+                {% if form.non_field_errors %}
+                <div class="alert-app warning mb-3">
+                    <i class="fa-solid fa-circle-exclamation"></i>
+                    <div>
+                        {% for error in form.non_field_errors %}<div>{{ error }}</div>{% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <form method="post" data-submit-once>
+                    {% csrf_token %}
+                    {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+                    <div class="mb-3">
+                        <label for="{{ form.username.id_for_label }}" class="form-label">{{ form.username.label }}</label>
+                        {{ form.username }}
+                        {% if form.username.errors %}<div class="invalid-feedback d-block">{{ form.username.errors.0 }}</div>{% endif %}
+                    </div>
+                    <div class="mb-2">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <label for="{{ form.password.id_for_label }}" class="form-label">Password</label>
+                        </div>
+                        {{ form.password }}
+                        {% if form.password.errors %}<div class="invalid-feedback d-block">{{ form.password.errors.0 }}</div>{% endif %}
+                    </div>
+                    <button type="submit" class="btn btn-forest btn-lg w-100 mt-3">
+                        <i class="fa-solid fa-arrow-right-to-bracket"></i> Sign in
+                    </button>
+                </form>
+
+                <div class="auth-footer-link">
+                    New to Food Bridge? <a href="{% url 'accounts:register' %}">Create an account</a>
+                </div>
+                <div class="auth-footer-link" style="margin-top:.5rem;">
+                    Need help with your account? <a href="mailto:hello@foodbridge.org">Contact support</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

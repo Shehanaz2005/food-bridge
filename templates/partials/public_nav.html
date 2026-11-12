@@ -1,0 +1,51 @@
+<nav class="navbar navbar-expand-lg public-nav">
+    <div class="container">
+        {% include "partials/logo.html" %}
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#publicNav" aria-controls="publicNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="publicNav">
+            <ul class="navbar-nav mx-auto nav-links">
+                <li class="nav-item"><a class="nav-link" href="{% url 'analytics:home' %}#how-it-works">How it works</a></li>
+                <li class="nav-item"><a class="nav-link" href="{% url 'analytics:home' %}#features">Features</a></li>
+                <li class="nav-item"><a class="nav-link" href="{% url 'analytics:impact' %}">Impact</a></li>
+                <li class="nav-item"><a class="nav-link" href="{% url 'analytics:home' %}#about">About us</a></li>
+            </ul>
+            <div class="nav-actions">
+                {% if user.is_authenticated %}
+                    {% include "partials/notification_bell.html" with bell_style="light" %}
+                    <div class="dropdown">
+                        <button class="btn avatar-menu" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            {% if user.avatar %}
+                                <img src="{{ user.avatar.url }}" alt="{{ user.display_name }}" class="avatar-img avatar-sm">
+                            {% else %}
+                                <span class="avatar-initials avatar-sm">{{ user.initials }}</span>
+                            {% endif %}
+                            <span class="d-none d-sm-inline">{{ user.display_name|truncatechars:18 }}</span>
+                            <i class="fa-solid fa-chevron-down tiny"></i>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end app-dropdown">
+                            <li class="dropdown-header">
+                                <strong>{{ user.display_name }}</strong><br>
+                                <span class="text-muted tiny">{{ user.get_role_display }}</span>
+                            </li>
+                            <li><a class="dropdown-item" href="{{ user.dashboard_url }}"><i class="fa-solid fa-gauge-high"></i> Dashboard</a></li>
+                            <li><a class="dropdown-item" href="{% url 'accounts:profile' %}"><i class="fa-solid fa-user"></i> My profile</a></li>
+                            <li><a class="dropdown-item" href="{% url 'support:report_issue' %}"><i class="fa-solid fa-flag"></i> Report an issue</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <form method="post" action="{% url 'accounts:logout' %}">
+                                    {% csrf_token %}
+                                    <button type="submit" class="dropdown-item"><i class="fa-solid fa-arrow-right-from-bracket"></i> Sign out</button>
+                                </form>
+                            </li>
+                        </ul>
+                    </div>
+                {% else %}
+                    <a href="{% url 'accounts:login' %}" class="btn btn-link-soft">Sign in</a>
+                    <a href="{% url 'accounts:register' %}" class="btn btn-brand"><i class="fa-solid fa-hand-holding-heart"></i> Join Food Bridge</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</nav>

@@ -1,0 +1,199 @@
+{% extends "dashboard_base.html" %}
+{% load static %}
+
+{% block title %}NGO Dashboard · Food Bridge{% endblock %}
+
+{% block dash_content %}
+<section class="welcome-banner">
+    <div>
+        <span class="eyebrow on-dark"><i class="fa-solid fa-house-chimney-user"></i> NGO workspace</span>
+        <h2>Hello, {{ profile.organization_name|default:user.display_name }}.</h2>
+        <p>Your smart matches are ranked by category fit, city, quantity, and expiry urgency. Request food while the safe window is open.</p>
+    </div>
+    <div class="banner-actions">
+        <a href="{% url 'donations:browse' %}" class="btn btn-brand"><i class="fa-solid fa-magnifying-glass"></i> Find food</a>
+        <a href="{% url 'donations:requests' %}" class="btn btn-soft"><i class="fa-solid fa-hand-holding-heart"></i> My requests</a>
+    </div>
+</section>
+
+{% if not profile.verified %}
+<div class="verify-banner">
+    <span class="verify-icon"><i class="fa-solid fa-hourglass-half"></i></span>
+    <div>
+        <h3>Your NGO is pending verification</h3>
+        <p>You can browse and see smart matches now. Requesting food unlocks after an administrator verifies {{ profile.organization_name }}.</p>
+    </div>
+    <a href="{% url 'accounts:profile' %}" class="btn btn-sm btn-brand">Complete profile</a>
+</div>
+{% endif %}
+
+<div class="stat-grid">
+    <div class="stat-card">
+        <div class="stat-top">
+            <span class="stat-icon orange"><i class="fa-solid fa-hourglass-half"></i></span>
+            {% if stats.pending %}<span class="badge-soft badge-soft-warning">Waiting</span>{% endif %}
+        </div>
+        <div class="stat-value">{{ stats.pending }}</div>
+        <div class="stat-label">Pending requests</div>
+        <span class="stat-note muted">Awaiting donor decision</span>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <span class="stat-icon"><i class="fa-solid fa-circle-check"></i></span>
+        </div>
+        <div class="stat-value">{{ stats.accepted }}</div>
+        <div class="stat-label">Accepted requests</div>
+        <span class="stat-note muted">Being prepared for pickup</span>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <span class="stat-icon info"><i class="fa-solid fa-bowl-rice"></i></span>
+        </div>
+        <div class="stat-value">{{ stats.received }}</div>
+        <div class="stat-label">Donations received</div>
+        <span class="stat-note muted">Receipt confirmed</span>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <span class="stat-icon purple"><i class="fa-solid fa-weight-hanging"></i></span>
+        </div>
+        <div class="stat-value">{{ stats.requests }}</div>
+        <div class="stat-label">Total requests made</div>
+        <div class="d-flex flex-wrap gap-2 mt-1">
+            {% for quantity in stats.quantity %}
+            <span class="badge-soft badge-soft-success">{{ quantity.formatted }} {{ quantity.label }}</span>
+            {% empty %}
+            <span class="stat-note muted">No received quantity yet</span>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<div class="card-soft mb-3">
+    <div class="card-head">
+        <div>
+            <h2>Top smart matches for your NGO</h2>
+            <p>Transparent scores based on your profile preferences, location, quantity, and expiry</p>
+        </div>
+        <a href="{% url 'donations:browse' %}?sort=match" class="card-link">See all matches <i class="fa-solid fa-arrow-right"></i></a>
+    </div>
+    <div class="card-body">
+        <div class="donation-grid">
+            {% for match in matches %}
+            <article class="donation-card">
+                <div class="donation-media cat-{{ match.donation.category }}">
+                    {% if match.donation.image %}<img src="{{ match.donation.image.url }}" alt="{{ match.donation.food_name }}">{% else %}<i class="fa-solid {{ match.donation.category_icon }}"></i>{% endif %}
+                    <div class="donation-badges">
+                        <span class="d-meta-badge match-{{ match.level_css }}"><i class="fa-solid fa-wand-magic-sparkles"></i> {{ match.level }}</span>
+                        <span class="d-meta-badge expiry"><i class="fa-regular fa-clock"></i> <span data-expires-at="{{ match.donation.expires_at|date:'c' }}">{{ match.donation.expires_at|date:"d M" }}</span></span>
+                    </div>
+                </div>
+                <div class="donation-body">
+                    <div class="donation-category">{{ match.donation.get_category_display }}</div>
+                    <h3>{{ match.donation.food_name }}</h3>
+                    <div class="donation-info">
+                        <span><i class="fa-solid fa-weight-hanging"></i>{{ match.donation.quantity_display }}</span>
+                        <span><i class="fa-solid fa-location-dot"></i>{{ match.donation.pickup_city }}</span>
+                        <span><i class="fa-solid fa-user"></i>{{ match.donation.donor.display_name|truncatechars:26 }}</span>
+                    </div>
+                    <div class="match-reasons">
+                        {% for reason in match.reasons|slice:":3" %}<span class="match-reason">{{ reason|truncatechars:48 }}</span>{% endfor %}
+                    </div>
+                    <div class="donation-foot">
+                        <span class="match-score">
+                            <span class="match-meter {{ match.level_css }}"><span style="width: {{ match.score }}%;"></span></span>
+                            {{ match.score }}/100
+                        </span>
+                        <a href="{% url 'donations:detail' match.donation.pk %}" class="btn btn-sm btn-forest">View &amp; request</a>
+                    </div>
+                </div>
+            </article>
+            {% empty %}
+            <div class="empty-state" style="grid-column:1/-1;">
+                <div class="empty-icon"><i class="fa-solid fa-magnifying-glass"></i></div>
+                <h3>No available food right now</h3>
+                <p>New donations appear here as soon as donors list them. Keep your preferences updated for better matches.</p>
+                <a href="{% url 'accounts:profile' %}" class="btn btn-sm btn-forest">Update preferences</a>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<div class="dash-grid">
+    <div class="card-soft">
+        <div class="card-head">
+            <div>
+                <h2>Recent requests</h2>
+                <p>Track donor decisions and delivery progress</p>
+            </div>
+            <a href="{% url 'donations:requests' %}" class="card-link">All requests <i class="fa-solid fa-arrow-right"></i></a>
+        </div>
+        {% if recent_requests %}
+        <div class="table-wrap">
+            <table class="table-app">
+                <thead><tr><th>Food</th><th>Requested</th><th>Status</th><th>Volunteer</th><th></th></tr></thead>
+                <tbody>
+                    {% for request in recent_requests %}
+                    <tr>
+                        <td>
+                            <div class="cell-main">{{ request.donation.food_name }}</div>
+                            <div class="cell-sub">{{ request.donation.pickup_city }} · {{ request.created_at|date:"d M" }}</div>
+                        </td>
+                        <td>{{ request.quantity }} <span class="cell-sub">{{ request.donation.get_unit_display }}</span></td>
+                        <td><span class="badge-soft badge-soft-{{ request.status_css }}">{{ request.get_status_display }}</span></td>
+                        <td>
+                            {% if request.donation.assignment %}
+                            <span class="cell-main">{{ request.donation.assignment.volunteer.display_name|truncatechars:20 }}</span>
+                            <div class="cell-sub">{{ request.donation.assignment.get_status_display }}</div>
+                            {% else %}<span class="cell-sub">Not assigned</span>{% endif %}
+                        </td>
+                        <td class="cell-actions"><a href="{% url 'donations:detail' request.donation.pk %}" class="btn btn-sm btn-soft">Open</a></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-icon"><i class="fa-solid fa-hand-holding-heart"></i></div>
+            <h3>No requests yet</h3>
+            <p>Browse smart matches and request food that fits your community's needs.</p>
+            <a href="{% url 'donations:browse' %}" class="btn btn-brand btn-sm">Find food</a>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="card-soft">
+        <div class="card-head">
+            <div>
+                <h2>Active pickups</h2>
+                <p>Accepted food in the delivery pipeline</p>
+            </div>
+        </div>
+        <div class="card-body">
+            {% for request in active_pickups %}
+            <div class="request-row">
+                <span class="food-thumb {% cycle '' 'orange' %}"><i class="fa-solid {{ request.donation.category_icon }}"></i></span>
+                <div class="request-copy">
+                    <strong>{{ request.donation.food_name }}</strong>
+                    <p>{{ request.quantity }} {{ request.donation.get_unit_display }} · {{ request.donation.get_status_display }}</p>
+                    {% if request.donation.assignment %}
+                    <p><i class="fa-solid fa-person-walking text-forest"></i> {{ request.donation.assignment.volunteer.display_name }} · {{ request.donation.assignment.get_status_display }}</p>
+                    {% else %}
+                    <p><i class="fa-regular fa-clock text-orange"></i> Waiting for volunteer assignment</p>
+                    {% endif %}
+                </div>
+                <a href="{% url 'donations:detail' request.donation.pk %}" class="btn btn-sm btn-soft">Track</a>
+            </div>
+            {% empty %}
+            <div class="empty-state" style="padding:1.8rem 0.5rem;">
+                <div class="empty-icon" style="width:52px;height:52px;font-size:1.1rem;"><i class="fa-solid fa-truck-fast"></i></div>
+                <h3>No active pickups</h3>
+                <p>Accepted requests and their volunteer progress will appear here.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

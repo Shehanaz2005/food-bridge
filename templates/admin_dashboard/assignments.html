@@ -1,0 +1,105 @@
+{% extends "dashboard_base.html" %}
+{% load static %}
+
+{% block title %}Pickups &amp; deliveries · Food Bridge{% endblock %}
+
+{% block dash_content %}
+<div class="d-flex flex-wrap justify-content-between align-items-end gap-2 mb-3">
+    <div>
+        <span class="eyebrow orange"><i class="fa-solid fa-truck-fast"></i> Operations</span>
+        <h2 style="font-size:1.5rem;margin:.6rem 0 .2rem;">Pickups &amp; deliveries</h2>
+        <p class="text-muted mb-0" style="font-size:.82rem;">Track every volunteer assignment from offer to confirmed completion.</p>
+    </div>
+    <a href="{% url 'admin_donations' %}" class="btn btn-soft"><i class="fa-solid fa-bowl-food"></i> Food donations</a>
+</div>
+
+<form method="get" class="filter-bar">
+    <div class="filter-grid">
+        <div class="filter-wide">
+            <label class="form-label" for="q">Search assignments</label>
+            <input type="search" name="q" id="q" class="form-control" value="{{ q }}" placeholder="Food or volunteer name">
+        </div>
+        <div>
+            <label class="form-label" for="status">Status</label>
+            <select name="status" id="status" class="form-select">
+                <option value="">All statuses</option>
+                {% for value, label in statuses %}
+                <option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="filter-actions">
+            <button type="submit" class="btn btn-forest"><i class="fa-solid fa-filter"></i> Apply</button>
+            <a href="{% url 'admin_assignments' %}" class="btn btn-soft">Reset</a>
+        </div>
+    </div>
+</form>
+
+<div class="card-soft">
+    <div class="card-head">
+        <div>
+            <h2>All pickup assignments</h2>
+            <p>{{ page_obj.paginator.count }} record{{ page_obj.paginator.count|pluralize }} · newest first</p>
+        </div>
+        <span class="badge-soft badge-soft-secondary">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+    </div>
+    {% if page_obj.object_list %}
+    <div class="table-wrap">
+        <table class="table-app">
+            <thead>
+                <tr><th>Food</th><th>Volunteer</th><th>Route</th><th>Status</th><th>Pickup</th><th>Delivered</th><th>Assigned by</th><th></th></tr>
+            </thead>
+            <tbody>
+                {% for assignment in page_obj %}
+                <tr>
+                    <td>
+                        <div class="cell-main">{{ assignment.donation.food_name }}</div>
+                        <div class="cell-sub">{{ assignment.donation.quantity_display }} · {{ assignment.donation.get_category_display }}</div>
+                    </td>
+                    <td>
+                        <div class="avatar-cell">
+                            <span class="avatar-initials avatar-sm">{{ assignment.volunteer.initials }}</span>
+                            <div>
+                                <strong>{{ assignment.volunteer.display_name|truncatechars:20 }}</strong>
+                                <span>{{ assignment.volunteer.phone|default:"No phone" }}</span>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="cell-sub"><i class="fa-solid fa-utensils me-1"></i>{{ assignment.donation.pickup_city }}</div>
+                        <div class="cell-sub"><i class="fa-solid fa-house-chimney-user me-1"></i>{{ assignment.donation.recipient_ngo.display_name|default:"NGO pending"|truncatechars:20 }}</div>
+                    </td>
+                    <td><span class="badge-soft badge-soft-{{ assignment.status_css }}">{{ assignment.get_status_display }}</span></td>
+                    <td><span class="cell-sub">{% if assignment.picked_up_at %}{{ assignment.picked_up_at|date:"d M, H:i" }}{% else %}—{% endif %}</span></td>
+                    <td><span class="cell-sub">{% if assignment.delivered_at %}{{ assignment.delivered_at|date:"d M, H:i" }}{% else %}—{% endif %}</span></td>
+                    <td><span class="cell-sub">{{ assignment.assigned_by.display_name|default:"System"|truncatechars:16 }}</span></td>
+                    <td class="cell-actions">
+                        {% if assignment.status == 'offered' or assignment.status == 'accepted' %}
+                        <a href="{% url 'admin_assign' assignment.donation.pk %}" class="btn btn-sm btn-forest" title="Reassign volunteer"><i class="fa-solid fa-user-pen"></i></a>
+                        {% endif %}
+                        <a href="{% url 'donations:detail' assignment.donation.pk %}" class="btn btn-sm btn-soft">Open</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% if page_obj.has_other_pages %}
+    <nav class="pagination-app" aria-label="Assignment pages">
+        {% if page_obj.has_previous %}<a href="{% querystring page=page_obj.previous_page_number %}"><i class="fa-solid fa-chevron-left"></i></a>{% else %}<span class="disabled"><i class="fa-solid fa-chevron-left"></i></span>{% endif %}
+        {% for num in page_obj.paginator.page_range %}
+            {% if num == page_obj.number %}<span class="current">{{ num }}</span>{% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}<a href="{% querystring page=num %}">{{ num }}</a>{% endif %}
+        {% endfor %}
+        {% if page_obj.has_next %}<a href="{% querystring page=page_obj.next_page_number %}"><i class="fa-solid fa-chevron-right"></i></a>{% else %}<span class="disabled"><i class="fa-solid fa-chevron-right"></i></span>{% endif %}
+    </nav>
+    {% endif %}
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-icon"><i class="fa-solid fa-truck-fast"></i></div>
+        <h3>No assignments match this view</h3>
+        <p>An assignment is created once an administrator gives an accepted donation to a volunteer.</p>
+        <a href="{% url 'admin_donations' %}" class="btn btn-forest btn-sm">View accepted donations</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

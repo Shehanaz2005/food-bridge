@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block title %}Access denied · Food Bridge{% endblock %}
+
+{% block content %}
+<section class="section" style="padding-top:5rem;padding-bottom:6rem;">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-7 text-center">
+                <span class="eyebrow orange"><i class="fa-solid fa-lock"></i> 403 — Access denied</span>
+                <h1 style="font-size:clamp(2.2rem,5vw,3.8rem);margin:1rem 0 .6rem;">This area is not yours to enter.</h1>
+                <p class="lead mx-auto" style="max-width:560px;">Your account does not have permission to open this page. If you believe this is a mistake, sign in with the right role or contact the Food Bridge team.</p>
+                <div class="d-flex flex-wrap justify-content-center gap-2 mt-4">
+                    <a href="{% url 'accounts:dashboard' %}" class="btn btn-brand"><i class="fa-solid fa-gauge-high"></i> Go to my dashboard</a>
+                    <a href="{% url 'analytics:home' %}" class="btn btn-soft"><i class="fa-solid fa-house"></i> Back to home</a>
+                </div>
+                <p class="text-muted mt-4" style="font-size:.8rem;">Need help? <a href="mailto:hello@foodbridge.org" class="text-forest">hello@foodbridge.org</a></p>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

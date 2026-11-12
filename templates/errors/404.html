@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block title %}Page not found · Food Bridge{% endblock %}
+
+{% block content %}
+<section class="section" style="padding-top:5rem;padding-bottom:6rem;">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-7 text-center">
+                <span class="eyebrow orange"><i class="fa-solid fa-compass"></i> 404 — Page not found</span>
+                <h1 style="font-size:clamp(2.2rem,5vw,3.8rem);margin:1rem 0 .6rem;">This plate is empty.</h1>
+                <p class="lead mx-auto" style="max-width:560px;">The page you are looking for may have moved, expired, or never existed. Let us guide you back to food that still needs rescuing.</p>
+                <div class="d-flex flex-wrap justify-content-center gap-2 mt-4">
+                    <a href="{% url 'analytics:home' %}" class="btn btn-brand"><i class="fa-solid fa-house"></i> Back to home</a>
+                    <a href="{% url 'donations:browse' %}" class="btn btn-soft"><i class="fa-solid fa-magnifying-glass"></i> Find food</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

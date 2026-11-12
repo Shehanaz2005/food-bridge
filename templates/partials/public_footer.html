@@ -1,0 +1,35 @@
+<footer class="site-footer">
+    <div class="container">
+        <div class="row g-4 footer-top">
+            <div class="col-lg-4">
+                <span class="footer-brand">Food<span>Bridge</span></span>
+                <p class="footer-tagline">Every meal deserves a purpose. We connect surplus food with people who need it — one rescue at a time.</p>
+                <p class="footer-contact"><i class="fa-solid fa-shield-heart"></i> Food safety first. Every donation is tracked from kitchen to community.</p>
+            </div>
+            <div class="col-6 col-lg-2">
+                <h6>Platform</h6>
+                <a href="{% url 'accounts:register' %}?role=donor">Donate food</a>
+                <a href="{% url 'accounts:register' %}?role=ngo">Find food</a>
+                <a href="{% url 'accounts:register' %}?role=volunteer">Volunteer</a>
+                <a href="{% url 'analytics:impact' %}">Impact</a>
+            </div>
+            <div class="col-6 col-lg-2">
+                <h6>Company</h6>
+                <a href="{% url 'analytics:home' %}#about">About</a>
+                <a href="{% url 'analytics:home' %}#how-it-works">How it works</a>
+                <a href="{% url 'analytics:home' %}#features">Features</a>
+                <a href="{% url 'support:report_issue' %}">Report an issue</a>
+            </div>
+            <div class="col-lg-4">
+                <h6>Get in touch</h6>
+                <p class="footer-contact"><i class="fa-solid fa-envelope"></i> hello@foodbridge.org</p>
+                <p class="footer-contact"><i class="fa-solid fa-location-dot"></i> Mumbai, Maharashtra, India</p>
+                <p class="footer-note">Food safety first. Every donation is tracked from kitchen to community.</p>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <span>© {% now "Y" %} Food Bridge. Built for a zero-waste future.</span>
+            <span class="footer-legal"><a href="{% url 'analytics:privacy' %}">Privacy</a><a href="{% url 'analytics:food_safety' %}">Food safety</a><a href="{% url 'analytics:terms' %}">Terms</a></span>
+        </div>
+    </div>
+</footer>

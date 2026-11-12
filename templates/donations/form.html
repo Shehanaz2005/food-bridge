@@ -1,0 +1,83 @@
+{% extends "dashboard_base.html" %}
+{% load static %}
+
+{% block title %}{% if is_edit %}Edit donation{% else %}Add food donation{% endif %} · Food Bridge{% endblock %}
+
+{% block dash_content %}
+<div class="d-flex flex-wrap justify-content-between align-items-end gap-2 mb-3">
+    <div>
+        <span class="eyebrow orange"><i class="fa-solid fa-bowl-food"></i> Food rescue listing</span>
+        <h2 style="font-size:1.5rem;margin:.6rem 0 .2rem;">{% if is_edit %}Edit “{{ donation.food_name }}”{% else %}Share surplus food{% endif %}</h2>
+        <p class="text-muted mb-0" style="font-size:.82rem;">Clear preparation and expiry details help NGOs act quickly and keep recipients safe.</p>
+    </div>
+    <a href="{% if is_edit %}{% url 'donations:detail' donation.pk %}{% else %}{% url 'donations:list' %}{% endif %}" class="btn btn-soft"><i class="fa-solid fa-arrow-left"></i> Back</a>
+</div>
+
+{% if form.non_field_errors %}
+<div class="alert-app warning mb-3">
+    <i class="fa-solid fa-circle-exclamation"></i>
+    <div>{% for error in form.non_field_errors %}<div>{{ error }}</div>{% endfor %}</div>
+</div>
+{% endif %}
+
+<form method="post" enctype="multipart/form-data" class="card-soft form-card" data-submit-once novalidate>
+    {% csrf_token %}
+
+    <div class="form-section-title"><i class="fa-solid fa-utensils"></i> Food details</div>
+    <div class="form-grid">
+        {% include "partials/form_field.html" with field=form.food_name wrapper_class="span-2" %}
+        {% include "partials/form_field.html" with field=form.category %}
+        {% include "partials/form_field.html" with field=form.is_vegetarian %}
+        {% include "partials/form_field.html" with field=form.description wrapper_class="span-2" %}
+        {% include "partials/form_field.html" with field=form.quantity %}
+        {% include "partials/form_field.html" with field=form.unit %}
+    </div>
+
+    <div class="form-section-title"><i class="fa-solid fa-hourglass-half"></i> Freshness &amp; safety</div>
+    <div class="form-grid">
+        {% include "partials/form_field.html" with field=form.prepared_at %}
+        {% include "partials/form_field.html" with field=form.expires_at %}
+    </div>
+    <div class="alert-app info mt-3">
+        <i class="fa-solid fa-shield-heart"></i>
+        <div>Food is removed from the marketplace automatically once the best-before time passes. Expired donations can never be requested, assigned, or picked up.</div>
+    </div>
+    <div class="mt-3">
+        {% include "partials/form_field.html" with field=form.handling_instructions wrapper_class="mb-0" %}
+    </div>
+
+    <div class="form-section-title"><i class="fa-solid fa-location-dot"></i> Pickup &amp; contact</div>
+    <div class="form-grid">
+        {% include "partials/form_field.html" with field=form.pickup_contact_name %}
+        {% include "partials/form_field.html" with field=form.pickup_contact_phone %}
+        {% include "partials/form_field.html" with field=form.pickup_city %}
+        {% include "partials/form_field.html" with field=form.pickup_address wrapper_class="span-2" %}
+    </div>
+    <p class="input-hint"><i class="fa-solid fa-lock"></i> The pickup address and phone number are only shared with the assigned volunteer and the NGO whose request you accept.</p>
+
+    <div class="form-section-title"><i class="fa-solid fa-image"></i> Food photo <span class="text-muted" style="font-weight:400;font-size:.75rem;">(optional)</span></div>
+    <div class="upload-zone">
+        {{ form.image }}
+        <span class="upload-preview">
+            {% if is_edit and donation.image %}
+                <img src="{{ donation.image.url }}" alt="Current food photo">
+            {% else %}
+                <i class="fa-solid fa-camera"></i>
+            {% endif %}
+        </span>
+        <span class="upload-copy">
+            <strong>Choose a clear photo of the food</strong>
+            <span>JPG, PNG, or WebP up to 5 MB. A photo helps NGOs assess the donation.</span>
+        </span>
+    </div>
+    {% if form.image.help_text %}<div class="form-text mt-2">{{ form.image.help_text }}</div>{% endif %}
+    {% for error in form.image.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+
+    <div class="form-actions">
+        <button type="submit" class="btn btn-brand">
+            <i class="fa-solid fa-circle-check"></i> {% if is_edit %}Save changes{% else %}Publish donation{% endif %}
+        </button>
+        <a href="{% if is_edit %}{% url 'donations:detail' donation.pk %}{% else %}{% url 'donations:list' %}{% endif %}" class="btn btn-soft">Cancel</a>
+    </div>
+</form>
+{% endblock %}

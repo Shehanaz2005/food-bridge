@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ legal_title }} · Food Bridge{% endblock %}
+
+{% block content %}
+<section class="section" style="padding-top:3.5rem;">
+    <div class="container">
+        <div class="row g-4">
+            <div class="col-lg-4">
+                <div class="sticky-panel">
+                    <span class="eyebrow orange"><i class="fa-solid fa-shield-heart"></i> Trust &amp; safety</span>
+                    <h1 style="font-size:clamp(1.9rem,3.6vw,2.8rem);margin:.8rem 0 .6rem;">{{ legal_title }}</h1>
+                    <p class="text-muted" style="font-size:.86rem;">{{ legal_lead }}</p>
+                    <div class="card-soft mt-3" style="padding:1rem;">
+                        <div class="info-list">
+                            <div class="info-row"><span class="label">Contact</span><span class="value"><a href="mailto:hello@foodbridge.org" class="text-forest">hello@foodbridge.org</a></span></div>
+                            <div class="info-row"><span class="label">Updated</span><span class="value">{% now "F Y" %}</span></div>
+                        </div>
+                        <hr class="soft-divider">
+                        <div class="d-grid gap-2">
+                            <a href="{% url 'analytics:food_safety' %}" class="btn btn-sm {% if legal_title == 'Food safety policy' %}btn-forest{% else %}btn-soft{% endif %}">Food safety</a>
+                            <a href="{% url 'analytics:privacy' %}" class="btn btn-sm {% if legal_title == 'Privacy policy' %}btn-forest{% else %}btn-soft{% endif %}">Privacy</a>
+                            <a href="{% url 'analytics:terms' %}" class="btn btn-sm {% if legal_title == 'Terms of use' %}btn-forest{% else %}btn-soft{% endif %}">Terms</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-8">
+                <div class="card-soft">
+                    <div class="card-body" style="padding:1.6rem;">
+                        {% for section in legal_sections %}
+                        <div class="{% if not forloop.first %}mt-4 pt-3{% endif %}" {% if not forloop.first %}style="border-top:1px solid var(--line);"{% endif %}>
+                            <h2 style="font-size:1.1rem;margin-bottom:.6rem;"><span class="text-orange">0{{ forloop.counter }}.</span> {{ section.title }}</h2>
+                            {% for paragraph in section.body %}
+                            <p style="font-size:.86rem;color:var(--ink-soft);line-height:1.75;">{{ paragraph }}</p>
+                            {% endfor %}
+                        </div>
+                        {% endfor %}
+                        <div class="alert-app info mt-4 mb-0">
+                            <i class="fa-solid fa-circle-info"></i>
+                            <div>This page is part of the Food Bridge platform. For a specific concern about a donation, use <a href="{% url 'support:report_issue' %}" class="text-forest">Report an issue</a> so it reaches the operations team with full context.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

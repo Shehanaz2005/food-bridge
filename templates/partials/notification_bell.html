@@ -1,0 +1,37 @@
+<div class="dropdown notification-dropdown">
+    <button class="icon-btn {{ bell_style|default:'' }}" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Notifications">
+        <i class="fa-regular fa-bell"></i>
+        {% if unread_notifications_count %}
+        <span class="notify-count">{{ unread_notifications_count }}</span>
+        {% endif %}
+    </button>
+    <div class="dropdown-menu dropdown-menu-end notification-menu">
+        <div class="notification-head">
+            <strong>Notifications</strong>
+            {% if unread_notifications_count %}<span class="badge-soft badge-soft-warning">{{ unread_notifications_count }} new</span>{% endif %}
+        </div>
+        <div class="notification-body">
+            {% for note in recent_notifications %}
+            <form method="post" action="{% url 'notifications:mark_read' note.pk %}" class="notification-form">
+                {% csrf_token %}
+                <button type="submit" class="notification-item {% if not note.is_read %}unread{% endif %}">
+                    <span class="note-icon note-{{ note.level }}"><i class="fa-solid {{ note.icon }}"></i></span>
+                    <span class="note-copy">
+                        <span class="note-title">{{ note.title }}</span>
+                        <span class="note-message">{{ note.message|truncatechars:80 }}</span>
+                        <span class="note-time">{{ note.created_at|timesince }} ago</span>
+                    </span>
+                </button>
+            </form>
+            {% empty %}
+            <div class="notification-empty">
+                <i class="fa-regular fa-bell-slash"></i>
+                <p>You're all caught up.</p>
+            </div>
+            {% endfor %}
+        </div>
+        <div class="notification-foot">
+            <a href="{% url 'notifications:list' %}">View all notifications</a>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,220 @@
+{% extends "dashboard_base.html" %}
+{% load static %}
+
+{% block title %}Pickup details · Food Bridge{% endblock %}
+
+{% block dash_content %}
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+    <div>
+        <span class="eyebrow orange"><i class="fa-solid fa-route"></i> Pickup assignment</span>
+        <h2 style="font-size:1.5rem;margin:.6rem 0 .2rem;">{{ donation.food_name }}</h2>
+        <p class="text-muted mb-0" style="font-size:.82rem;">{{ donation.quantity_display }} · {{ donation.get_category_display }} · assigned {{ assignment.created_at|date:"d M Y, H:i" }}</p>
+    </div>
+    <div class="d-flex align-items-center gap-2 flex-wrap">
+        <span class="badge-soft badge-soft-{{ assignment.status_css }}">{{ assignment.get_status_display }}</span>
+        <a href="{% url 'volunteers:assignments' %}" class="btn btn-soft btn-sm"><i class="fa-solid fa-arrow-left"></i> All assignments</a>
+    </div>
+</div>
+
+{% if assignment.status == 'offered' %}
+<div class="alert-app warning mb-3">
+    <i class="fa-solid fa-inbox"></i>
+    <div><strong>A pickup offer is waiting.</strong> Review the route and expiry window, then accept or decline. Please respond quickly so the food is not delayed.</div>
+</div>
+{% elif assignment.status == 'accepted' %}
+<div class="alert-app info mb-3">
+    <i class="fa-solid fa-box"></i>
+    <div><strong>Assignment accepted.</strong> Collect the food from the donor, then mark it picked up. Check the expiry countdown before you travel.</div>
+</div>
+{% elif assignment.status == 'picked_up' %}
+<div class="alert-app info mb-3">
+    <i class="fa-solid fa-truck-fast"></i>
+    <div><strong>Food is with you.</strong> Deliver it to {{ ngo.display_name|default:"the recipient NGO" }} and mark the delivery complete.</div>
+    </div>
+{% elif assignment.status == 'delivered' %}
+<div class="alert-app success mb-3">
+    <i class="fa-solid fa-circle-check"></i>
+    <div><strong>Delivery recorded.</strong> The NGO will confirm receipt, which completes the donation. Thank you for delivering.</div>
+</div>
+{% elif assignment.status == 'declined' %}
+<div class="alert-app warning mb-3">
+    <i class="fa-solid fa-circle-xmark"></i>
+    <div><strong>You declined this assignment.</strong> The Food Bridge team has been notified to arrange another volunteer.</div>
+</div>
+{% else %}
+<div class="alert-app mb-3">
+    <i class="fa-solid fa-flag-checkered"></i>
+    <div><strong>{{ assignment.get_status_display }}.</strong> This assignment is no longer active.</div>
+</div>
+{% endif %}
+
+<div class="assignment-grid">
+    <div>
+        <div class="card-soft mb-3">
+            <div class="card-head">
+                <div>
+                    <h2>Pickup route</h2>
+                    <p>Collect from the donor, deliver to the NGO</p>
+                </div>
+                <span class="badge-soft badge-soft-warning" data-expires-at="{{ donation.expires_at|date:'c' }}">Expires {{ donation.expires_at|date:"d M, H:i" }}</span>
+            </div>
+            <div class="card-body">
+                <div class="route-card">
+                    <div class="route-stop">
+                        <span class="route-dot pickup"><i class="fa-solid fa-utensils"></i></span>
+                        <div class="route-copy">
+                            <small>Pickup from donor</small>
+                            <strong>{{ donation.donor.display_name }}</strong>
+                            <p>{{ donation.pickup_address }}, {{ donation.pickup_city }}</p>
+                            <p><i class="fa-solid fa-user"></i> {{ donation.pickup_contact_name }} · <a href="tel:{{ donation.pickup_contact_phone }}">{{ donation.pickup_contact_phone }}</a></p>
+                            <a href="https://www.google.com/maps/search/?api=1&amp;query={{ donation.maps_query|urlencode }}" target="_blank" rel="noopener"><i class="fa-solid fa-map-location-dot"></i> Open pickup in Maps</a>
+                        </div>
+                    </div>
+                    <div class="route-stop">
+                        <span class="route-dot drop"><i class="fa-solid fa-house-chimney-user"></i></span>
+                        <div class="route-copy">
+                            <small>Deliver to NGO</small>
+                            <strong>{{ ngo.display_name|default:"Recipient NGO" }}</strong>
+                            {% if ngo %}
+                            <p>{{ ngo.address|default:"Address available from the NGO profile" }}{% if ngo.city %}, {{ ngo.city }}{% endif %}</p>
+                            <p><i class="fa-solid fa-phone"></i> <a href="tel:{{ ngo.phone }}">{{ ngo.phone|default:"Contact via Food Bridge" }}</a></p>
+                            {% else %}
+                            <p>The recipient NGO will be shown once the donor accepts a request.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                {% if donation.handling_instructions %}
+                <div class="alert-app info mt-3">
+                    <i class="fa-solid fa-shield-heart"></i>
+                    <div><strong>Handling instructions.</strong><br>{{ donation.handling_instructions|linebreaksbr }}</div>
+                </div>
+                {% endif %}
+                {% if assignment.notes %}
+                <div class="panel-note mt-3"><strong>Assignment notes.</strong><br>{{ assignment.notes|linebreaksbr }}</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card-soft">
+            <div class="card-head">
+                <div>
+                    <h2>Journey progress</h2>
+                    <p>Shared with the donor, NGO, and administrators</p>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="journey">
+                    {% for step in journey %}
+                    <div class="journey-step {% if step.done %}done{% elif step.current %}current{% endif %}">
+                        <span class="journey-node"><i class="fa-solid {{ step.icon }}"></i></span>
+                        <div class="journey-label">{{ step.label }}</div>
+                        <div class="journey-time">
+                            {% if step.event %}{{ step.event.created_at|date:"d M, H:i" }}{% elif step.current %}In progress{% else %}Pending{% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <aside>
+        <div class="card-soft mb-3">
+            <div class="card-head">
+                <div>
+                    <h2>Your next action</h2>
+                    <p>{{ assignment.get_status_display }}</p>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if assignment.status == 'offered' %}
+                <form method="post" action="{% url 'volunteers:accept' assignment.pk %}" class="mb-2" data-submit-once>
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-brand w-100"><i class="fa-solid fa-circle-check"></i> Accept assignment</button>
+                </form>
+                <form method="post" action="{% url 'volunteers:decline' assignment.pk %}" data-submit-once data-confirm="Decline this pickup? The team will assign another volunteer.">
+                    {% csrf_token %}
+                    <label class="form-label" for="declineReason">Reason for declining (optional)</label>
+                    <textarea class="form-control mb-2" id="declineReason" name="reason" rows="2" placeholder="Let the team know if you are unavailable."></textarea>
+                    <button type="submit" class="btn btn-danger-soft w-100"><i class="fa-solid fa-xmark"></i> Decline assignment</button>
+                </form>
+                {% elif assignment.status == 'accepted' %}
+                <form method="post" action="{% url 'volunteers:pickup' assignment.pk %}" data-submit-once data-confirm="Confirm that you have collected the food from the donor?">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-brand w-100"><i class="fa-solid fa-box"></i> Mark food picked up</button>
+                </form>
+                <p class="input-hint mt-2 mb-0">Only mark pickup after you have the food in hand and it is still within its safe window.</p>
+                {% elif assignment.status == 'picked_up' %}
+                <form method="post" action="{% url 'volunteers:deliver' assignment.pk %}" data-submit-once data-confirm="Confirm that you delivered the food to the NGO?">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-brand w-100"><i class="fa-solid fa-truck-fast"></i> Mark food delivered</button>
+                </form>
+                <p class="input-hint mt-2 mb-0">The NGO will confirm receipt to complete the donation.</p>
+                {% elif assignment.status == 'delivered' %}
+                <div class="alert-app success mb-0">
+                    <i class="fa-solid fa-hourglass-half"></i>
+                    <div>Waiting for {{ ngo.display_name|default:"the NGO" }} to confirm receipt.</div>
+                </div>
+                {% elif assignment.status == 'completed' %}
+                <div class="alert-app success mb-0">
+                    <i class="fa-solid fa-flag-checkered"></i>
+                    <div>Delivery completed {{ assignment.completed_at|date:"d M Y, H:i" }}. Thank you for volunteering.</div>
+                </div>
+                {% else %}
+                <p class="text-muted mb-0" style="font-size:.8rem;">This assignment has no pending action.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card-soft mb-3">
+            <div class="card-head">
+                <div>
+                    <h2>Donation summary</h2>
+                    <p>Safety and recipient details</p>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="info-list">
+                    <div class="info-row"><span class="label">Food</span><span class="value">{{ donation.food_name }}</span></div>
+                    <div class="info-row"><span class="label">Quantity</span><span class="value">{{ donation.quantity_display }}</span></div>
+                    <div class="info-row"><span class="label">Category</span><span class="value">{{ donation.get_category_display }}</span></div>
+                    <div class="info-row"><span class="label">Prepared</span><span class="value">{{ donation.prepared_at|date:"d M, H:i" }}</span></div>
+                    <div class="info-row"><span class="label">Best before</span><span class="value">{{ donation.expires_at|date:"d M, H:i" }}</span></div>
+                    <div class="info-row"><span class="label">Recipient</span><span class="value">{{ ngo.display_name|default:"Pending" }}</span></div>
+                </div>
+                <a href="{% url 'donations:detail' donation.pk %}" class="btn btn-soft w-100 mt-3"><i class="fa-solid fa-arrow-up-right-from-square"></i> View full donation</a>
+                <a href="{% url 'support:report_issue' %}" class="btn btn-link-soft w-100 mt-1"><i class="fa-solid fa-flag"></i> Report a problem</a>
+            </div>
+        </div>
+
+        <div class="card-soft">
+            <div class="card-head">
+                <div>
+                    <h2>Activity</h2>
+                    <p>Latest journey events</p>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if timeline %}
+                <div class="timeline">
+                    {% for event in timeline %}
+                    <div class="timeline-item {% if forloop.first %}latest{% endif %}">
+                        <span class="timeline-dot"><i class="fa-solid fa-route"></i></span>
+                        <div class="timeline-copy">
+                            <strong>{{ event.title }}</strong>
+                            {% if event.description %}<p>{{ event.description }}</p>{% endif %}
+                            <span>{{ event.created_at|date:"d M, H:i" }}</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted mb-0" style="font-size:.8rem;">No events recorded yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </aside>
+</div>
+{% endblock %}

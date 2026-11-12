@@ -1,0 +1,96 @@
+{% extends "dashboard_base.html" %}
+{% load static %}
+
+{% block title %}Monitor requests · Food Bridge{% endblock %}
+
+{% block dash_content %}
+<div class="d-flex flex-wrap justify-content-between align-items-end gap-2 mb-3">
+    <div>
+        <span class="eyebrow orange"><i class="fa-solid fa-hand-holding-heart"></i> Operations</span>
+        <h2 style="font-size:1.5rem;margin:.6rem 0 .2rem;">NGO requests</h2>
+        <p class="text-muted mb-0" style="font-size:.82rem;">Monitor every request, donor decision, and fulfilment across the platform.</p>
+    </div>
+    <a href="{% url 'admin_donations' %}" class="btn btn-soft"><i class="fa-solid fa-bowl-food"></i> Food donations</a>
+</div>
+
+<form method="get" class="filter-bar">
+    <div class="filter-grid">
+        <div class="filter-wide">
+            <label class="form-label" for="{{ form.q.id_for_label }}">Search requests</label>
+            {{ form.q }}
+        </div>
+        <div>
+            <label class="form-label" for="{{ form.status.id_for_label }}">Status</label>
+            {{ form.status }}
+        </div>
+        <div class="filter-actions">
+            <button type="submit" class="btn btn-forest"><i class="fa-solid fa-filter"></i> Apply</button>
+            <a href="{% url 'admin_requests' %}" class="btn btn-soft">Reset</a>
+        </div>
+    </div>
+</form>
+
+<div class="card-soft">
+    <div class="card-head">
+        <div>
+            <h2>All requests</h2>
+            <p>{{ page_obj.paginator.count }} record{{ page_obj.paginator.count|pluralize }} · newest first</p>
+        </div>
+        <span class="badge-soft badge-soft-secondary">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+    </div>
+    {% if page_obj.object_list %}
+    <div class="table-wrap">
+        <table class="table-app">
+            <thead>
+                <tr><th>Food</th><th>NGO</th><th>Donor</th><th>Quantity</th><th>Status</th><th>Volunteer</th><th>Requested</th><th></th></tr>
+            </thead>
+            <tbody>
+                {% for item in page_obj %}
+                <tr>
+                    <td>
+                        <div class="cell-main">{{ item.donation.food_name }}</div>
+                        <div class="cell-sub">{{ item.donation.get_category_display }} · {{ item.donation.pickup_city }}</div>
+                    </td>
+                    <td>
+                        <div class="cell-main">{{ item.ngo.display_name|truncatechars:24 }}</div>
+                        <div class="cell-sub">@{{ item.ngo.username }}</div>
+                    </td>
+                    <td><span class="cell-sub">{{ item.donation.donor.display_name|truncatechars:20 }}</span></td>
+                    <td>{{ item.quantity }} <span class="cell-sub">{{ item.donation.get_unit_display }}</span></td>
+                    <td><span class="badge-soft badge-soft-{{ item.status_css }}">{{ item.get_status_display }}</span></td>
+                    <td>
+                        {% if item.donation.assignment %}
+                        <span class="cell-sub">{{ item.donation.assignment.volunteer.display_name|truncatechars:18 }}</span>
+                        <div class="cell-sub">{{ item.donation.assignment.get_status_display }}</div>
+                        {% else %}
+                        <span class="cell-sub">—</span>
+                        {% endif %}
+                    </td>
+                    <td><span class="cell-sub">{{ item.created_at|date:"d M Y" }}</span></td>
+                    <td class="cell-actions">
+                        <a href="{% url 'donations:detail' item.donation.pk %}" class="btn btn-sm btn-soft">Open</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% if page_obj.has_other_pages %}
+    <nav class="pagination-app" aria-label="Request pages">
+        {% if page_obj.has_previous %}<a href="{% querystring page=page_obj.previous_page_number %}"><i class="fa-solid fa-chevron-left"></i></a>{% else %}<span class="disabled"><i class="fa-solid fa-chevron-left"></i></span>{% endif %}
+        {% for num in page_obj.paginator.page_range %}
+            {% if num == page_obj.number %}<span class="current">{{ num }}</span>{% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}<a href="{% querystring page=num %}">{{ num }}</a>{% endif %}
+        {% endfor %}
+        {% if page_obj.has_next %}<a href="{% querystring page=page_obj.next_page_number %}"><i class="fa-solid fa-chevron-right"></i></a>{% else %}<span class="disabled"><i class="fa-solid fa-chevron-right"></i></span>{% endif %}
+    </nav>
+    {% endif %}
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-icon"><i class="fa-solid fa-hand-holding-heart"></i></div>
+        <h3>No requests match this view</h3>
+        <p>Try another status or clear your search. NGO requests appear here as soon as they are submitted.</p>
+        <a href="{% url 'admin_requests' %}" class="btn btn-forest btn-sm">Clear filters</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

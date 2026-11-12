@@ -1,0 +1,135 @@
+{% extends "dashboard_base.html" %}
+{% load static %}
+
+{% block title %}Assign volunteer · Food Bridge{% endblock %}
+
+{% block dash_content %}
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+    <div>
+        <span class="eyebrow orange"><i class="fa-solid fa-user-plus"></i> Pickup coordination</span>
+        <h2 style="font-size:1.5rem;margin:.6rem 0 .2rem;">Assign a volunteer</h2>
+        <p class="text-muted mb-0" style="font-size:.82rem;">{{ donation.food_name }} · {{ donation.quantity_display }} · pickup in {{ donation.pickup_city }}</p>
+    </div>
+    <a href="{% url 'donations:detail' donation.pk %}" class="btn btn-soft"><i class="fa-solid fa-arrow-left"></i> Back to donation</a>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-5">
+        <div class="card-soft mb-3">
+            <div class="card-head">
+                <div>
+                    <h2>Donation summary</h2>
+                    <p>Accepted request ready for pickup</p>
+                </div>
+                <span class="badge-soft badge-soft-{{ donation.status_css }}">{{ donation.get_status_display }}</span>
+            </div>
+            <div class="card-body">
+                <div class="info-list">
+                    <div class="info-row"><span class="label">Food</span><span class="value">{{ donation.food_name }}</span></div>
+                    <div class="info-row"><span class="label">Quantity</span><span class="value">{{ donation.quantity_display }}</span></div>
+                    <div class="info-row"><span class="label">Donor</span><span class="value">{{ donation.donor.display_name }}</span></div>
+                    <div class="info-row"><span class="label">Pickup city</span><span class="value">{{ donation.pickup_city }}</span></div>
+                    <div class="info-row"><span class="label">Recipient NGO</span><span class="value">{{ donation.recipient_ngo.display_name|default:"Pending" }}</span></div>
+                    <div class="info-row"><span class="label">Expires</span><span class="value">{{ donation.expires_at|date:"d M Y, H:i" }}</span></div>
+                </div>
+                <div class="alert-app warning mt-3 mb-0">
+                    <i class="fa-regular fa-clock"></i>
+                    <div><strong>Expiry safety.</strong> <span data-expires-at="{{ donation.expires_at|date:'c' }}">{{ donation.expires_at|date:"d M, H:i" }}</span> — do not assign after expiry.</div>
+                </div>
+                {% if can_view_private %}
+                <hr class="soft-divider">
+                <div class="info-list">
+                    <div class="info-row"><span class="label">Contact</span><span class="value">{{ donation.pickup_contact_name }}</span></div>
+                    <div class="info-row"><span class="label">Phone</span><span class="value">{{ donation.pickup_contact_phone }}</span></div>
+                    <div class="info-row"><span class="label">Address</span><span class="value">{{ donation.pickup_address }}</span></div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card-soft">
+            <div class="card-head">
+                <div>
+                    <h2>Currently assigned</h2>
+                    <p>{% if assignment %}{{ assignment.get_status_display }}{% else %}No volunteer yet{% endif %}</p>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if assignment %}
+                <div class="d-flex align-items-center gap-2">
+                    <span class="avatar-initials avatar-md">{{ assignment.volunteer.initials }}</span>
+                    <div>
+                        <strong style="display:block;font-size:.84rem;">{{ assignment.volunteer.display_name }}</strong>
+                        <span class="cell-sub">{{ assignment.volunteer.phone|default:"No phone" }} · {{ assignment.volunteer.city|default:"No city" }}</span>
+                    </div>
+                </div>
+                {% else %}
+                <p class="text-muted mb-0" style="font-size:.8rem;">Choose an available volunteer below. They will be notified and must accept the assignment.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-7">
+        <div class="card-soft mb-3">
+            <div class="card-head">
+                <div>
+                    <h2>Select volunteer</h2>
+                    <p>Available volunteers, prioritised by city and completed pickups</p>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if form.non_field_errors %}
+                <div class="alert-app warning mb-3">
+                    <i class="fa-solid fa-circle-exclamation"></i>
+                    <div>{% for error in form.non_field_errors %}<div>{{ error }}</div>{% endfor %}</div>
+                </div>
+                {% endif %}
+                <form method="post" data-submit-once>
+                    {% csrf_token %}
+                    {% include "partials/form_field.html" with field=form.volunteer %}
+                    {% include "partials/form_field.html" with field=form.notes wrapper_class="mb-0" %}
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-brand"><i class="fa-solid fa-paper-plane"></i> Assign &amp; notify volunteer</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="card-soft mb-3">
+            <div class="card-head">
+                <div>
+                    <h2>Recommended volunteers</h2>
+                    <p>Highest suitability for this pickup</p>
+                </div>
+            </div>
+            <div class="card-body">
+                {% for profile in recommended %}
+                <div class="request-row">
+                    <span class="avatar-initials avatar-md">{{ profile.user.initials }}</span>
+                    <div class="request-copy">
+                        <strong>{{ profile.user.display_name }}</strong>
+                        <p><i class="fa-solid fa-location-dot"></i> {{ profile.user.city|default:"City not set" }} · {{ profile.get_vehicle_type_display }} · {{ profile.completed_count }} completed</p>
+                        <p>{{ profile.user.phone|default:"No phone" }}{% if profile.service_area %} · serves {{ profile.service_area }}{% endif %}</p>
+                    </div>
+                    <span class="badge-soft {% if profile.is_available %}badge-soft-success{% else %}badge-soft-secondary{% endif %}">
+                        {% if profile.is_available %}Available{% else %}Unavailable{% endif %}
+                    </span>
+                </div>
+                {% empty %}
+                <div class="empty-state" style="padding:1.6rem;">
+                    <div class="empty-icon" style="width:52px;height:52px;font-size:1.1rem;"><i class="fa-solid fa-user-clock"></i></div>
+                    <h3>No available volunteers</h3>
+                    <p>Ask volunteers to mark themselves available, or assign manually once one is free.</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <form method="post" action="{% url 'admin_auto_assign' donation.pk %}" data-confirm="Automatically assign the best available volunteer?">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-forest w-100"><i class="fa-solid fa-wand-magic-sparkles"></i> Auto-assign best available volunteer</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

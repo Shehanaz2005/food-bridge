@@ -1,0 +1,174 @@
+{% extends "dashboard_base.html" %}
+{% load static %}
+
+{% block title %}My profile · Food Bridge{% endblock %}
+
+{% block dash_content %}
+<div class="d-flex flex-wrap justify-content-between align-items-end gap-2 mb-3">
+    <div>
+        <span class="eyebrow orange"><i class="fa-solid fa-user"></i> Account settings</span>
+        <h2 style="font-size:1.5rem;margin:.6rem 0 .2rem;">My profile</h2>
+        <p class="text-muted mb-0" style="font-size:.82rem;">Keep your contact details and role preferences current so matching and pickups work smoothly.</p>
+    </div>
+    <a href="{% url 'accounts:password_change' %}" class="btn btn-soft"><i class="fa-solid fa-lock"></i> Change password</a>
+</div>
+
+<div class="profile-grid">
+    <aside>
+        <div class="card-soft profile-card">
+            {% if user.avatar %}
+                <img src="{{ user.avatar.url }}" alt="{{ user.display_name }}" class="avatar-img avatar-xl">
+            {% else %}
+                <span class="avatar-initials avatar-xl">{{ user.initials }}</span>
+            {% endif %}
+            <h2>{{ user.display_name }}</h2>
+            <p>{{ user.email }}</p>
+            <span class="badge-soft badge-soft-secondary">{{ user.get_role_display }}</span>
+            {% if user.role == 'ngo' %}
+                {% if user.ngo_profile.verified %}
+                <div><span class="verification-pill verified"><i class="fa-solid fa-circle-check"></i> Verified NGO</span></div>
+                {% else %}
+                <div><span class="verification-pill pending"><i class="fa-solid fa-hourglass-half"></i> Verification pending</span></div>
+                {% endif %}
+            {% endif %}
+            <div class="profile-meta">
+                <span><i class="fa-solid fa-user"></i> @{{ user.username }}</span>
+                <span><i class="fa-solid fa-phone"></i> {{ user.phone|default:"No phone added" }}</span>
+                <span><i class="fa-solid fa-location-dot"></i> {{ user.city|default:"No city added" }}</span>
+                <span><i class="fa-solid fa-calendar-day"></i> Joined {{ user.date_joined|date:"d M Y" }}</span>
+                <span><i class="fa-solid fa-clock-rotate-left"></i> Updated {{ user.updated_at|date:"d M Y" }}</span>
+            </div>
+        </div>
+
+        <div class="card-soft mt-3">
+            <div class="card-body">
+                <h3 style="font-size:.9rem;"><i class="fa-solid fa-shield-halved text-forest"></i> Account security</h3>
+                <p style="font-size:.76rem;color:var(--muted);">Your password is stored using Django's secure hashing. Sessions are protected with CSRF and HttpOnly cookies.</p>
+                <a href="{% url 'accounts:password_change' %}" class="btn btn-soft btn-sm w-100"><i class="fa-solid fa-key"></i> Update password</a>
+            </div>
+        </div>
+
+        <div class="card-soft mt-3">
+            <div class="card-body">
+                <h3 style="font-size:.9rem;"><i class="fa-solid fa-circle-question text-orange"></i> Need help?</h3>
+                <p style="font-size:.76rem;color:var(--muted);">Report a problem with a donation, pickup, account, or verification decision.</p>
+                <a href="{% url 'support:report_issue' %}" class="btn btn-outline-forest btn-sm w-100"><i class="fa-solid fa-flag"></i> Report an issue</a>
+            </div>
+        </div>
+    </aside>
+
+    <div>
+        {% if user.role == 'ngo' and not user.ngo_profile.verified %}
+        <div class="verify-banner">
+            <span class="verify-icon"><i class="fa-solid fa-hourglass-half"></i></span>
+            <div>
+                <h3>Verification is pending</h3>
+                <p>Complete your organisation details below. An administrator will review and verify your NGO before food requests unlock.</p>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if user_form.non_field_errors or profile_form.non_field_errors %}
+        <div class="alert-app warning mb-3">
+            <i class="fa-solid fa-circle-exclamation"></i>
+            <div>
+                {% for error in user_form.non_field_errors %}<div>{{ error }}</div>{% endfor %}
+                {% if profile_form %}{% for error in profile_form.non_field_errors %}<div>{{ error }}</div>{% endfor %}{% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        <form method="post" enctype="multipart/form-data" class="card-soft form-card" data-submit-once novalidate>
+            {% csrf_token %}
+
+            <div class="form-section-title"><i class="fa-solid fa-id-card"></i> Personal information</div>
+            <div class="form-grid">
+                {% include "partials/form_field.html" with field=user_form.first_name %}
+                {% include "partials/form_field.html" with field=user_form.last_name %}
+                {% include "partials/form_field.html" with field=user_form.email %}
+                {% include "partials/form_field.html" with field=user_form.phone %}
+                {% include "partials/form_field.html" with field=user_form.city %}
+                {% include "partials/form_field.html" with field=user_form.address wrapper_class="span-2" %}
+            </div>
+
+            <div class="form-section-title"><i class="fa-solid fa-image"></i> Profile photo</div>
+            <div class="upload-zone">
+                {{ user_form.avatar }}
+                <span class="upload-preview">
+                    {% if user.avatar %}
+                        <img src="{{ user.avatar.url }}" alt="Current profile photo">
+                    {% else %}
+                        <i class="fa-solid fa-user"></i>
+                    {% endif %}
+                </span>
+                <span class="upload-copy">
+                    <strong>Upload a profile photo</strong>
+                    <span>JPG, PNG, or WebP up to 5 MB. Optional for all roles.</span>
+                </span>
+            </div>
+            {% for error in user_form.avatar.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+
+            {% if profile_form %}
+                {% if user.role == 'donor' %}
+                <div class="form-section-title"><i class="fa-solid fa-utensils"></i> Donor details</div>
+                <div class="form-grid">
+                    {% include "partials/form_field.html" with field=profile_form.organization_name %}
+                    {% include "partials/form_field.html" with field=profile_form.donor_type %}
+                </div>
+                <p class="input-hint"><i class="fa-solid fa-circle-info"></i> Organisation name is optional for individual donors and shown to NGOs on your listings.</p>
+                {% elif user.role == 'ngo' %}
+                <div class="form-section-title"><i class="fa-solid fa-house-chimney-user"></i> Organisation details</div>
+                <div class="form-grid">
+                    {% include "partials/form_field.html" with field=profile_form.organization_name %}
+                    {% include "partials/form_field.html" with field=profile_form.registration_number %}
+                    {% include "partials/form_field.html" with field=profile_form.contact_person %}
+                    {% include "partials/form_field.html" with field=profile_form.website %}
+                    {% include "partials/form_field.html" with field=profile_form.service_area %}
+                    {% include "partials/form_field.html" with field=profile_form.description wrapper_class="span-2" %}
+                </div>
+
+                <div class="form-section-title"><i class="fa-solid fa-wand-magic-sparkles"></i> Matching preferences</div>
+                <div class="mb-3">
+                    <span class="form-label d-block">{{ profile_form.preferred_categories.label }}</span>
+                    <div class="row g-2">
+                        {% for checkbox in profile_form.preferred_categories %}
+                        <div class="col-sm-6 col-lg-4">
+                            <div class="form-check">
+                                {{ checkbox.tag }}
+                                <label class="form-check-label" for="{{ checkbox.id_for_label }}">{{ checkbox.choice_label }}</label>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% if profile_form.preferred_categories.help_text %}<div class="form-text">{{ profile_form.preferred_categories.help_text }}</div>{% endif %}
+                    {% for error in profile_form.preferred_categories.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                </div>
+                <div class="form-grid">
+                    {% include "partials/form_field.html" with field=profile_form.minimum_quantity %}
+                    {% include "partials/form_field.html" with field=profile_form.minimum_unit %}
+                </div>
+                <p class="input-hint"><i class="fa-solid fa-circle-info"></i> These preferences are used by Smart Food Matching. They never block you from requesting other food.</p>
+                {% elif user.role == 'volunteer' %}
+                <div class="form-section-title"><i class="fa-solid fa-person-walking"></i> Volunteer details</div>
+                <div class="form-grid">
+                    {% include "partials/form_field.html" with field=profile_form.vehicle_type %}
+                    {% include "partials/form_field.html" with field=profile_form.service_area %}
+                    {% include "partials/form_field.html" with field=profile_form.bio wrapper_class="span-2" %}
+                </div>
+                <div class="form-check mt-2">
+                    {{ profile_form.is_available }}
+                    <label class="form-check-label" for="{{ profile_form.is_available.id_for_label }}">{{ profile_form.is_available.label }}</label>
+                    {% if profile_form.is_available.help_text %}<div class="form-text">{{ profile_form.is_available.help_text }}</div>{% endif %}
+                    {% for error in profile_form.is_available.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                </div>
+                {% endif %}
+            {% endif %}
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-brand"><i class="fa-solid fa-circle-check"></i> Save profile</button>
+                <a href="{{ user.dashboard_url }}" class="btn btn-soft">Back to dashboard</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

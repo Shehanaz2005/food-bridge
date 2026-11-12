@@ -1,0 +1,104 @@
+{% extends "dashboard_base.html" %}
+{% load static %}
+
+{% block title %}My Donations · Food Bridge{% endblock %}
+
+{% block dash_content %}
+<div class="d-flex flex-wrap justify-content-between align-items-end gap-2 mb-3">
+    <div>
+        <span class="eyebrow orange"><i class="fa-solid fa-bowl-food"></i> Donation inventory</span>
+        <h2 style="font-size:1.5rem;margin:.6rem 0 .2rem;">{{ stats.total }} donation{{ stats.total|pluralize }} created</h2>
+        <p class="text-muted mb-0" style="font-size:.82rem;">{{ stats.active }} active · {{ stats.completed }} completed · {{ stats.pending_requests }} pending request{{ stats.pending_requests|pluralize }}</p>
+    </div>
+    <a href="{% url 'donations:create' %}" class="btn btn-brand"><i class="fa-solid fa-plus"></i> Add donation</a>
+</div>
+
+<form method="get" class="filter-bar">
+    <div class="filter-grid">
+        <div class="filter-wide">
+            <label class="form-label" for="q">Search donations</label>
+            <input type="search" name="q" id="q" class="form-control" value="{{ q }}" placeholder="Food name, description, or pickup city">
+        </div>
+        <div>
+            <label class="form-label" for="status">Status</label>
+            <select name="status" id="status" class="form-select">
+                <option value="">All statuses</option>
+                {% for value, label in statuses %}
+                <option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="filter-actions">
+            <button type="submit" class="btn btn-forest"><i class="fa-solid fa-filter"></i> Apply</button>
+            <a href="{% url 'donations:list' %}" class="btn btn-soft">Reset</a>
+        </div>
+    </div>
+</form>
+
+<div class="card-soft">
+    <div class="card-head">
+        <div>
+            <h2>Food listings</h2>
+            <p>{{ page_obj.paginator.count }} result{{ page_obj.paginator.count|pluralize }} matching your filters</p>
+        </div>
+        <a href="{% url 'donations:history' %}" class="card-link">View history <i class="fa-solid fa-arrow-right"></i></a>
+    </div>
+    {% if donations %}
+    <div class="table-wrap">
+        <table class="table-app">
+            <thead>
+                <tr><th>Food</th><th>Quantity</th><th>Pickup city</th><th>Status</th><th>Expires</th><th>Requests</th><th></th></tr>
+            </thead>
+            <tbody>
+                {% for donation in donations %}
+                <tr>
+                    <td>
+                        <div class="food-cell">
+                            <span class="food-thumb {% cycle '' 'orange' %}">
+                                {% if donation.image %}<img src="{{ donation.image.url }}" alt="">{% else %}<i class="fa-solid {{ donation.category_icon }}"></i>{% endif %}
+                            </span>
+                            <div>
+                                <div class="cell-main">{{ donation.food_name }}</div>
+                                <div class="cell-sub">{{ donation.get_category_display }} · {{ donation.created_at|date:"d M Y" }}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td>{{ donation.quantity_display }}</td>
+                    <td>{{ donation.pickup_city }}</td>
+                    <td><span class="badge-soft badge-soft-{{ donation.status_css }}">{{ donation.get_status_display }}</span></td>
+                    <td><span data-expires-at="{{ donation.expires_at|date:'c' }}" style="font-size:.72rem;">{{ donation.expires_at|date:"d M, H:i" }}</span></td>
+                    <td>
+                        <a href="{% url 'donations:detail' donation.pk %}" class="cell-sub" style="color:var(--forest-700);font-weight:600;">
+                            {{ donation.requests.count }} total
+                        </a>
+                    </td>
+                    <td class="cell-actions">
+                        {% if donation.status == 'available' or donation.status == 'requested' %}
+                        <a href="{% url 'donations:edit' donation.pk %}" class="btn btn-sm btn-soft" title="Edit"><i class="fa-solid fa-pen"></i></a>
+                        {% endif %}
+                        <a href="{% url 'donations:detail' donation.pk %}" class="btn btn-sm btn-forest">Open</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% if page_obj.has_other_pages %}
+    <div class="pagination-app">
+        {% if page_obj.has_previous %}<a href="{% querystring page=page_obj.previous_page_number %}"><i class="fa-solid fa-chevron-left"></i></a>{% else %}<span class="disabled"><i class="fa-solid fa-chevron-left"></i></span>{% endif %}
+        {% for num in page_obj.paginator.page_range %}
+            {% if num == page_obj.number %}<span class="current">{{ num }}</span>{% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}<a href="{% querystring page=num %}">{{ num }}</a>{% endif %}
+        {% endfor %}
+        {% if page_obj.has_next %}<a href="{% querystring page=page_obj.next_page_number %}"><i class="fa-solid fa-chevron-right"></i></a>{% else %}<span class="disabled"><i class="fa-solid fa-chevron-right"></i></span>{% endif %}
+    </div>
+    {% endif %}
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-icon"><i class="fa-solid fa-bowl-food"></i></div>
+        <h3>No donations match this view</h3>
+        <p>Try clearing your filters, or create a new listing for surplus food.</p>
+        <a href="{% url 'donations:create' %}" class="btn btn-brand btn-sm"><i class="fa-solid fa-plus"></i> Add donation</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

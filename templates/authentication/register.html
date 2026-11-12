@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Create an account · Food Bridge{% endblock %}
+
+{% block content %}
+<section class="auth-page">
+    <div class="container">
+        <div class="auth-shell" style="grid-template-columns: 1fr 1.35fr;">
+            <aside class="auth-aside">
+                {% include "partials/logo.html" %}
+                <h2>Be part of the bridge.</h2>
+                <p>One account, one clear role, and a real workflow that turns surplus into shared meals.</p>
+                <div class="auth-points">
+                    <div class="auth-point">
+                        <i class="fa-solid fa-utensils"></i>
+                        <div><strong>Donors</strong><span>Share surplus safely with a tracked expiry window</span></div>
+                    </div>
+                    <div class="auth-point">
+                        <i class="fa-solid fa-house-chimney-user"></i>
+                        <div><strong>NGOs</strong><span>Request matched food and confirm receipt</span></div>
+                    </div>
+                    <div class="auth-point">
+                        <i class="fa-solid fa-person-walking"></i>
+                        <div><strong>Volunteers</strong><span>Move food from donor to community</span></div>
+                    </div>
+                </div>
+                <div class="auth-aside-note"><i class="fa-solid fa-shield-heart"></i> NGO accounts are verified by an administrator before food requests unlock.</div>
+            </aside>
+
+            <div class="auth-main">
+                <div class="auth-mobile-brand">{% include "partials/logo.html" %}</div>
+                <h1 class="auth-title">Create your account</h1>
+                <p class="auth-sub">Choose how you want to participate. You can complete your profile after signing up.</p>
+
+                {% if form.non_field_errors %}
+                <div class="alert-app warning mb-3">
+                    <i class="fa-solid fa-circle-exclamation"></i>
+                    <div>{% for error in form.non_field_errors %}<div>{{ error }}</div>{% endfor %}</div>
+                </div>
+                {% endif %}
+
+                <form method="post" data-register-form data-submit-once>
+                    {% csrf_token %}
+
+                    <div class="mb-2">
+                        <span class="form-label d-block">I am joining as <span class="text-danger">*</span></span>
+                        <div class="role-picker">
+                            {% for value, label in form.role.field.choices %}
+                            <div class="role-option">
+                                <input type="radio" name="role" id="role_{{ value }}" value="{{ value }}" {% if form.role.value == value %}checked{% endif %}>
+                                <label for="role_{{ value }}">
+                                    <i class="fa-solid {% if value == 'donor' %}fa-utensils{% elif value == 'ngo' %}fa-house-chimney-user{% else %}fa-person-walking{% endif %}"></i>
+                                    <span>{{ label }}</span>
+                                </label>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% for error in form.role.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                    </div>
+
+                    <div class="form-grid">
+                        {% include "partials/form_field.html" with field=form.username wrapper_class="col-12 mb-0" %}
+                        {% include "partials/form_field.html" with field=form.first_name wrapper_class="mb-0" %}
+                        {% include "partials/form_field.html" with field=form.last_name wrapper_class="mb-0" %}
+                        {% include "partials/form_field.html" with field=form.email wrapper_class="mb-0" %}
+                        {% include "partials/form_field.html" with field=form.phone wrapper_class="mb-0" %}
+                        {% include "partials/form_field.html" with field=form.city wrapper_class="mb-0" %}
+                        {% include "partials/form_field.html" with field=form.address wrapper_class="span-2 mb-0" %}
+
+                        <div class="span-2" data-role-fields="donor" hidden>
+                            {% include "partials/form_field.html" with field=form.donor_type wrapper_class="mb-0" %}
+                        </div>
+                        <div class="span-2" data-role-fields="ngo" hidden>
+                            {% include "partials/form_field.html" with field=form.registration_number wrapper_class="mb-0" %}
+                        </div>
+                        <div class="span-2" data-role-fields="volunteer" hidden>
+                            {% include "partials/form_field.html" with field=form.vehicle_type wrapper_class="mb-0" %}
+                        </div>
+
+                        {% include "partials/form_field.html" with field=form.organization_name wrapper_class="span-2 mb-0" %}
+                        {% include "partials/form_field.html" with field=form.password1 wrapper_class="mb-0" %}
+                        {% include "partials/form_field.html" with field=form.password2 wrapper_class="mb-0" %}
+                    </div>
+
+                    <div class="form-check mt-3">
+                        {{ form.terms }}
+                        <label class="form-check-label" for="{{ form.terms.id_for_label }}">
+                            I agree to Food Bridge's food-safety and community guidelines.
+                        </label>
+                        {% for error in form.terms.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                    </div>
+
+                    <button type="submit" class="btn btn-brand btn-lg w-100 mt-3">
+                        <i class="fa-solid fa-hand-holding-heart"></i> Create account
+                    </button>
+                </form>
+
+                <div class="auth-footer-link">
+                    Already have an account? <a href="{% url 'accounts:login' %}">Sign in</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

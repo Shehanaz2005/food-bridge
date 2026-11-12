@@ -1,0 +1,116 @@
+{% extends "dashboard_base.html" %}
+{% load static %}
+
+{% block title %}Pickup assignments · Food Bridge{% endblock %}
+
+{% block dash_content %}
+<div class="d-flex flex-wrap justify-content-between align-items-end gap-2 mb-3">
+    <div>
+        <span class="eyebrow orange"><i class="fa-solid fa-truck-fast"></i> Delivery workspace</span>
+        <h2 style="font-size:1.5rem;margin:.6rem 0 .2rem;">Pickup assignments</h2>
+        <p class="text-muted mb-0" style="font-size:.82rem;">{{ stats.offered }} new offer{{ stats.offered|pluralize }} · {{ stats.active }} active · {{ stats.completed }} completed</p>
+    </div>
+    <a href="{% url 'volunteers:history' %}" class="btn btn-soft"><i class="fa-solid fa-clock-rotate-left"></i> History</a>
+</div>
+
+<div class="stat-grid">
+    <div class="stat-card">
+        <div class="stat-top"><span class="stat-icon orange"><i class="fa-solid fa-inbox"></i></span>{% if stats.offered %}<span class="badge-soft badge-soft-warning">Action needed</span>{% endif %}</div>
+        <div class="stat-value">{{ stats.offered }}</div>
+        <div class="stat-label">New offers</div>
+        <span class="stat-note muted">Awaiting your response</span>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top"><span class="stat-icon"><i class="fa-solid fa-route"></i></span></div>
+        <div class="stat-value">{{ stats.active }}</div>
+        <div class="stat-label">Active deliveries</div>
+        <span class="stat-note muted">Accepted or picked up</span>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top"><span class="stat-icon info"><i class="fa-solid fa-circle-check"></i></span></div>
+        <div class="stat-value">{{ stats.completed }}</div>
+        <div class="stat-label">Completed deliveries</div>
+        <span class="stat-note muted">Confirmed by NGOs</span>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top"><span class="stat-icon purple"><i class="fa-solid fa-weight-hanging"></i></span></div>
+        <div class="stat-value">{{ stats.total }}</div>
+        <div class="stat-label">All assignments</div>
+        <div class="d-flex flex-wrap gap-2 mt-1">
+            {% for quantity in stats.delivered_quantity %}
+            <span class="badge-soft badge-soft-success">{{ quantity.formatted }} {{ quantity.label }}</span>
+            {% empty %}
+            <span class="stat-note muted">No delivered quantity yet</span>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<form method="get" class="filter-bar">
+    <div class="filter-grid">
+        <div class="filter-wide">
+            <label class="form-label" for="status">Filter assignments</label>
+            <select name="status" id="status" class="form-select">
+                <option value="">All assignments</option>
+                {% for value, label in statuses %}
+                <option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="filter-actions">
+            <button type="submit" class="btn btn-forest"><i class="fa-solid fa-filter"></i> Apply</button>
+            <a href="{% url 'volunteers:assignments' %}" class="btn btn-soft">Reset</a>
+        </div>
+    </div>
+</form>
+
+{% if assignments %}
+<div class="donation-grid">
+    {% for assignment in assignments %}
+    <article class="donation-card">
+        <div class="donation-media cat-{{ assignment.donation.category }}">
+            {% if assignment.donation.image %}
+                <img src="{{ assignment.donation.image.url }}" alt="{{ assignment.donation.food_name }}">
+            {% else %}
+                <i class="fa-solid {{ assignment.donation.category_icon }}"></i>
+            {% endif %}
+            <div class="donation-badges">
+                <span class="d-meta-badge match-{{ assignment.status_css }}">{{ assignment.get_status_display }}</span>
+                <span class="d-meta-badge expiry"><i class="fa-regular fa-clock"></i> <span data-expires-at="{{ assignment.donation.expires_at|date:'c' }}">{{ assignment.donation.expires_at|date:"d M" }}</span></span>
+            </div>
+        </div>
+        <div class="donation-body">
+            <div class="donation-category">{{ assignment.donation.get_category_display }}</div>
+            <h3>{{ assignment.donation.food_name }}</h3>
+            <div class="donation-info">
+                <span><i class="fa-solid fa-weight-hanging"></i>{{ assignment.donation.quantity_display }}</span>
+                <span><i class="fa-solid fa-utensils"></i>Pickup: {{ assignment.donation.pickup_city }}</span>
+                <span><i class="fa-solid fa-house-chimney-user"></i>Deliver to: {{ assignment.donation.recipient_ngo.display_name|default:"Recipient NGO"|truncatechars:24 }}</span>
+            </div>
+            <div class="donation-foot" style="border-top:0;padding-top:0;">
+                <span class="cell-sub">Assigned {{ assignment.created_at|timesince }} ago</span>
+                <div class="d-flex gap-1">
+                    {% if assignment.status == 'offered' %}
+                    <form method="post" action="{% url 'volunteers:accept' assignment.pk %}" data-submit-once>
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-brand">Accept</button>
+                    </form>
+                    {% endif %}
+                    <a href="{% url 'volunteers:assignment_detail' assignment.pk %}" class="btn btn-sm btn-forest">Open</a>
+                </div>
+            </div>
+        </div>
+    </article>
+    {% endfor %}
+</div>
+{% else %}
+<div class="card-soft">
+    <div class="empty-state">
+        <div class="empty-icon"><i class="fa-solid fa-truck-fast"></i></div>
+        <h3>No assignments in this view</h3>
+        <p>When an administrator assigns you a pickup, it will appear here with the donor and NGO details. Keep your availability switched on.</p>
+        <a href="{% url 'accounts:profile' %}" class="btn btn-forest btn-sm">Update availability</a>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

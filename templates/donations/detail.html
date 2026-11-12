@@ -1,0 +1,385 @@
+{% extends "dashboard_base.html" %}
+{% load static %}
+
+{% block title %}{{ donation.food_name }} · Food Bridge{% endblock %}
+
+{% block dash_content %}
+<div
+    data-donation-status
+    data-status-url="{{ status_url }}"
+    data-current-status="{{ donation.status }}"
+>
+    <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+        <div>
+            <span class="eyebrow orange"><i class="fa-solid {{ donation.category_icon }}"></i> {{ donation.get_category_display }}</span>
+            <h2 style="font-size:1.55rem;margin:.55rem 0 .2rem;">{{ donation.food_name }}</h2>
+            <p class="text-muted mb-0" style="font-size:.8rem;">
+                Listed {{ donation.created_at|date:"d M Y, H:i" }} · Donor {{ donation.donor.display_name }}
+            </p>
+        </div>
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <span class="badge-soft badge-soft-{{ donation.status_css }}" style="font-size:.76rem;padding:.42rem .8rem;">{{ donation.get_status_display }}</span>
+            <span class="badge-soft {% if donation.is_expired %}badge-soft-danger{% else %}badge-soft-warning{% endif %}" data-expires-at="{{ donation.expires_at|date:'c' }}">
+                {{ donation.expires_at|date:"d M Y, H:i" }}
+            </span>
+        </div>
+    </div>
+
+    {% if donation.status == 'expired' %}
+    <div class="alert-app warning mb-3">
+        <i class="fa-solid fa-hourglass-end"></i>
+        <div><strong>This donation has expired.</strong> For food-safety reasons it can no longer be requested, assigned, or collected.</div>
+    </div>
+    {% elif donation.status == 'cancelled' %}
+    <div class="alert-app mb-3" style="background:#f7f7f5;">
+        <i class="fa-solid fa-ban"></i>
+        <div><strong>This donation was cancelled.</strong> {{ donation.cancelled_reason|default:"No reason was provided." }}</div>
+    </div>
+    {% elif donation.status == 'delivered' and can_confirm %}
+    <div class="alert-app success mb-3">
+        <i class="fa-solid fa-hand-holding-heart"></i>
+        <div><strong>The food has been delivered to your NGO.</strong> Confirm receipt to complete this donation and record the rescued quantity in your impact.</div>
+    </div>
+    {% endif %}
+
+    <div class="detail-grid">
+        <div>
+            <div class="detail-media cat-{{ donation.category }}">
+                {% if donation.image %}
+                    <img src="{{ donation.image.url }}" alt="{{ donation.food_name }}">
+                {% else %}
+                    <i class="fa-solid {{ donation.category_icon }}"></i>
+                {% endif %}
+            </div>
+
+            <div class="detail-title-row">
+                <div>
+                    <h2>{{ donation.food_name }}</h2>
+                    <div class="detail-meta">
+                        <span><i class="fa-solid fa-weight-hanging"></i>{{ donation.quantity_display }}</span>
+                        <span><i class="fa-solid fa-location-dot"></i>{{ donation.pickup_city }}</span>
+                        <span><i class="fa-solid {% if donation.is_vegetarian %}fa-leaf{% else %}fa-drumstick-bite{% endif %}"></i>{% if donation.is_vegetarian %}Vegetarian{% else %}Contains meat{% endif %}</span>
+                        <span><i class="fa-regular fa-clock"></i><span data-expires-at="{{ donation.expires_at|date:'c' }}">{{ donation.expires_at|date:"d M Y, H:i" }}</span></span>
+                    </div>
+                </div>
+            </div>
+
+            {% if donation.description %}
+            <p style="font-size:.87rem;">{{ donation.description|linebreaksbr }}</p>
+            {% endif %}
+
+            {% if donation.handling_instructions %}
+            <div class="alert-app info mt-3">
+                <i class="fa-solid fa-shield-heart"></i>
+                <div><strong>Handling instructions.</strong><br>{{ donation.handling_instructions|linebreaksbr }}</div>
+            </div>
+            {% endif %}
+
+            {% if match %}
+            <div class="card-soft mt-3">
+                <div class="card-head">
+                    <div>
+                        <h2><i class="fa-solid fa-wand-magic-sparkles text-orange"></i> Why this matches your NGO</h2>
+                        <p>Rule-based score using category, city, quantity, and expiry urgency</p>
+                    </div>
+                    <span class="badge-soft badge-soft-{{ match.level_css }}">{{ match.level }} · {{ match.score }}/100</span>
+                </div>
+                <div class="card-body">
+                    <div class="match-meter {{ match.level_css }}" style="width:100%;height:8px;margin-bottom:1rem;"><span style="width: {{ match.score }}%;"></span></div>
+                    <div class="match-reasons">
+                        {% for reason in match.reasons %}<span class="match-reason">{{ reason }}</span>{% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="card-soft journey-card mt-3">
+                <div class="card-head">
+                    <div>
+                        <h2>Rescue journey</h2>
+                        <p>Live status from listing to confirmed receipt</p>
+                    </div>
+                    <span class="badge-soft badge-soft-{{ donation.status_css }}">{{ donation.get_status_display }}</span>
+                </div>
+                <div class="card-body">
+                    <div class="journey">
+                        {% for step in journey %}
+                        <div class="journey-step {% if step.done %}done{% elif step.current %}current{% endif %}">
+                            <span class="journey-node"><i class="fa-solid {{ step.icon }}"></i></span>
+                            <div class="journey-label">{{ step.label }}</div>
+                            <div class="journey-time">
+                                {% if step.event %}{{ step.event.created_at|date:"d M, H:i" }}{% elif step.current %}In progress{% else %}Pending{% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            {% if ngo_requests %}
+            <div class="card-soft mt-3">
+                <div class="card-head">
+                    <div>
+                        <h2>NGO requests</h2>
+                        <p>{{ ngo_requests|length }} request{{ ngo_requests|length|pluralize }} for this donation</p>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% for item in ngo_requests %}
+                    <div class="request-row">
+                        <span class="avatar-initials avatar-md">{{ item.ngo.initials }}</span>
+                        <div class="request-copy">
+                            <strong>{{ item.ngo.display_name }}</strong>
+                            <p>{{ item.quantity }} {{ donation.get_unit_display }} requested · {{ item.created_at|timesince }} ago</p>
+                            {% if item.message %}<p style="color:var(--ink-soft);">{{ item.message|truncatechars:180 }}</p>{% endif %}
+                            {% if item.donor_note %}<p><i class="fa-solid fa-comment-dots"></i> {{ item.donor_note }}</p>{% endif %}
+                            <span class="badge-soft badge-soft-{{ item.status_css }}">{{ item.get_status_display }}</span>
+                            {% if item.status == 'pending' %}
+                                {% if user.is_staff or donation.donor_id == user.pk %}
+                                <div class="request-actions">
+                                    <form method="post" action="{% url 'donations:request_accept' donation.pk item.pk %}" data-submit-once data-confirm="Accept {{ item.ngo.display_name }}'s request? Other pending requests will be declined.">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-forest"><i class="fa-solid fa-check"></i> Accept</button>
+                                    </form>
+                                    <form method="post" action="{% url 'donations:request_reject' donation.pk item.pk %}" data-submit-once data-confirm="Decline this request?">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="reason" value="The donor is unable to fulfil this request.">
+                                        <button type="submit" class="btn btn-sm btn-danger-soft"><i class="fa-solid fa-xmark"></i> Decline</button>
+                                    </form>
+                                </div>
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                        <span class="request-quantity">{{ item.quantity }} {{ donation.get_unit_display }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="card-soft mt-3">
+                <div class="card-head">
+                    <div>
+                        <h2>Activity timeline</h2>
+                        <p>Every recorded workflow event</p>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if tracking_events %}
+                    <div class="timeline">
+                        {% for event in tracking_events %}
+                        <div class="timeline-item {% if forloop.first %}latest{% endif %}">
+                            <span class="timeline-dot"><i class="fa-solid fa-route"></i></span>
+                            <div class="timeline-copy">
+                                <strong>{{ event.title }}</strong>
+                                {% if event.description %}<p>{{ event.description }}</p>{% endif %}
+                                <span>{{ event.created_at|date:"d M Y, H:i" }}{% if event.actor %} · {{ event.actor.display_name }}{% endif %}</span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted mb-0" style="font-size:.8rem;">No activity has been recorded yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <aside class="sticky-panel">
+            <div class="card-soft request-panel mb-3">
+                <div class="card-head">
+                    <div>
+                        <h2>Donation details</h2>
+                        <p>What you need to know</p>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="info-list">
+                        <div class="info-row"><span class="label">Quantity</span><span class="value">{{ donation.quantity_display }}</span></div>
+                        <div class="info-row"><span class="label">Category</span><span class="value">{{ donation.get_category_display }}</span></div>
+                        <div class="info-row"><span class="label">Prepared</span><span class="value">{{ donation.prepared_at|date:"d M Y, H:i" }}</span></div>
+                        <div class="info-row"><span class="label">Best before</span><span class="value">{{ donation.expires_at|date:"d M Y, H:i" }}</span></div>
+                        <div class="info-row"><span class="label">Pickup city</span><span class="value">{{ donation.pickup_city }}</span></div>
+                        <div class="info-row"><span class="label">Requests</span><span class="value">{{ donation.requests.count }}</span></div>
+                        {% if accepted_request %}
+                        <div class="info-row"><span class="label">Recipient NGO</span><span class="value">{{ accepted_request.ngo.display_name }}</span></div>
+                        {% endif %}
+                    </div>
+
+                    {% if can_view_private %}
+                    <div class="divider"></div>
+                    <div class="info-list">
+                        <div class="info-row"><span class="label">Pickup contact</span><span class="value">{{ donation.pickup_contact_name }}</span></div>
+                        <div class="info-row"><span class="label">Phone</span><span class="value"><a href="tel:{{ donation.pickup_contact_phone }}">{{ donation.pickup_contact_phone }}</a></span></div>
+                        <div class="info-row"><span class="label">Address</span><span class="value">{{ donation.pickup_address }}</span></div>
+                    </div>
+                    <a href="https://www.google.com/maps/search/?api=1&amp;query={{ donation.maps_query|urlencode }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-forest w-100 mt-3">
+                        <i class="fa-solid fa-map-location-dot"></i> Open in Maps
+                    </a>
+                    {% else %}
+                    <div class="panel-note mt-3">
+                        <i class="fa-solid fa-lock"></i> The exact pickup address and phone number are shared once a request is accepted and a volunteer is assigned.
+                    </div>
+                    {% endif %}
+
+                    {% if donation.is_expired %}
+                    <div class="expiry-callout expired mt-3">
+                        <i class="fa-solid fa-circle-exclamation"></i>
+                        <div><strong>Expired</strong>This food is outside its safe window and cannot be distributed.</div>
+                    </div>
+                    {% elif donation.status == 'completed' %}
+                    <div class="expiry-callout safe mt-3">
+                        <i class="fa-solid fa-circle-check"></i>
+                        <div><strong>Rescue complete</strong>Receipt was confirmed on {{ donation.completed_at|date:"d M Y, H:i" }}.</div>
+                    </div>
+                    {% else %}
+                    <div class="expiry-callout mt-3">
+                        <i class="fa-solid fa-hourglass-half"></i>
+                        <div><strong>Safe window</strong>Expires <span data-expires-at="{{ donation.expires_at|date:'c' }}">{{ donation.expires_at|date:"d M Y, H:i" }}</span></div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if assignment %}
+            <div class="card-soft mb-3">
+                <div class="card-head">
+                    <div>
+                        <h2>Pickup assignment</h2>
+                        <p>{{ assignment.get_status_display }}</p>
+                    </div>
+                    <span class="badge-soft badge-soft-{{ assignment.status_css }}">{{ assignment.get_status_display }}</span>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <span class="avatar-initials avatar-md">{{ assignment.volunteer.initials }}</span>
+                        <div>
+                            <strong style="display:block;font-size:.83rem;">{{ assignment.volunteer.display_name }}</strong>
+                            <span class="cell-sub">{{ assignment.volunteer.get_role_display }}{% if assignment.volunteer.city %} · {{ assignment.volunteer.city }}{% endif %}</span>
+                        </div>
+                    </div>
+                    {% if assignment.notes %}<p class="panel-note">{{ assignment.notes }}</p>{% endif %}
+                    {% if user.is_staff %}
+                    <a href="{% url 'admin_assign' donation.pk %}" class="btn btn-sm btn-soft w-100 mt-2"><i class="fa-solid fa-user-pen"></i> Reassign volunteer</a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            {% if user.role == 'ngo' %}
+                {% if can_request %}
+                <div class="card-soft request-panel mb-3">
+                    <div class="card-head">
+                        <div>
+                            <h2>Request this food</h2>
+                            <p>Tell the donor how it will be used</p>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <form method="post" action="{% url 'donations:request' donation.pk %}" data-submit-once>
+                            {% csrf_token %}
+                            {% include "partials/form_field.html" with field=request_form.quantity %}
+                            {% include "partials/form_field.html" with field=request_form.message wrapper_class="mb-0" %}
+                            <button type="submit" class="btn btn-brand w-100 mt-3">
+                                <i class="fa-solid fa-hand-holding-heart"></i> Submit request
+                            </button>
+                        </form>
+                        <p class="input-hint mt-2 mb-0"><i class="fa-solid fa-shield-halved"></i> One request per NGO per donation. Your request is reviewed by the donor.</p>
+                    </div>
+                </div>
+                {% elif my_request %}
+                <div class="card-soft mb-3">
+                    <div class="card-head">
+                        <div>
+                            <h2>Your request</h2>
+                            <p>Submitted {{ my_request.created_at|date:"d M Y, H:i" }}</p>
+                        </div>
+                        <span class="badge-soft badge-soft-{{ my_request.status_css }}">{{ my_request.get_status_display }}</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="info-list">
+                            <div class="info-row"><span class="label">Quantity</span><span class="value">{{ my_request.quantity }} {{ donation.get_unit_display }}</span></div>
+                            <div class="info-row"><span class="label">Status</span><span class="value">{{ my_request.get_status_display }}</span></div>
+                        </div>
+                        {% if my_request.message %}<p class="panel-note mt-2 mb-2">{{ my_request.message }}</p>{% endif %}
+                        {% if my_request.donor_note %}<p class="panel-note mt-2 mb-2"><strong>Donor note:</strong> {{ my_request.donor_note }}</p>{% endif %}
+                        {% if my_request.status == 'pending' %}
+                        <form method="post" action="{% url 'donations:request_cancel' donation.pk my_request.pk %}" data-submit-once data-confirm="Cancel your request for this donation?">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-danger-soft w-100"><i class="fa-solid fa-xmark"></i> Cancel request</button>
+                        </form>
+                        {% endif %}
+                        {% if my_request.status == 'accepted' %}
+                        <div class="alert-app success mt-2">
+                            <i class="fa-solid fa-circle-check"></i>
+                            <div>Your request was accepted. {% if assignment %}{{ assignment.volunteer.display_name }} is handling the pickup.{% else %}A volunteer will be assigned for delivery.{% endif %}</div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% elif not ngo_verified %}
+                <div class="card-soft mb-3">
+                    <div class="card-body">
+                        <div class="alert-app warning mb-0">
+                            <i class="fa-solid fa-hourglass-half"></i>
+                            <div><strong>Verification pending.</strong> An administrator must verify your NGO before you can request food. Keep your profile details current.</div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if can_confirm %}
+                <form method="post" action="{% url 'donations:confirm' donation.pk %}" class="d-grid" data-submit-once data-confirm="Confirm that your NGO received this food? This completes the donation.">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-brand"><i class="fa-solid fa-circle-check"></i> Confirm receipt</button>
+                </form>
+                {% endif %}
+            {% endif %}
+
+            {% if user.is_staff and can_assign %}
+            <a href="{% url 'admin_assign' donation.pk %}" class="btn btn-brand w-100 mb-3"><i class="fa-solid fa-user-plus"></i> Assign a volunteer</a>
+            {% endif %}
+
+            {% if can_cancel %}
+            <button type="button" class="btn btn-danger-soft w-100 mb-3" data-bs-toggle="modal" data-bs-target="#cancelDonationModal">
+                <i class="fa-solid fa-ban"></i> Cancel donation
+            </button>
+            {% endif %}
+
+            <div class="d-grid gap-2">
+                <a href="{% if user.is_staff %}{% url 'admin_donations' %}{% elif user.role == 'ngo' %}{% url 'donations:browse' %}{% else %}{% url 'donations:list' %}{% endif %}" class="btn btn-soft">
+                    <i class="fa-solid fa-arrow-left"></i> Back to listings
+                </a>
+                <a href="{% url 'support:report_issue' %}" class="btn btn-link-soft">
+                    <i class="fa-solid fa-flag"></i> Report a problem
+                </a>
+            </div>
+        </aside>
+    </div>
+</div>
+
+{% if can_cancel %}
+<div class="modal fade" id="cancelDonationModal" tabindex="-1" aria-labelledby="cancelDonationLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius:20px;border:1px solid var(--line);">
+            <form method="post" action="{% url 'donations:cancel' donation.pk %}" data-submit-once>
+                {% csrf_token %}
+                <div class="modal-header" style="border-bottom:1px solid var(--line);">
+                    <h5 class="modal-title" id="cancelDonationLabel">Cancel this donation?</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p style="font-size:.84rem;color:var(--muted);">Pending and accepted NGOs and any assigned volunteer will be notified immediately. This action cannot be undone.</p>
+                    <label for="cancelReason" class="form-label">Reason (optional)</label>
+                    <textarea class="form-control" id="cancelReason" name="reason" rows="3" placeholder="Let the NGOs know why this donation is no longer available."></textarea>
+                </div>
+                <div class="modal-footer" style="border-top:1px solid var(--line);">
+                    <button type="button" class="btn btn-soft btn-sm" data-bs-dismiss="modal">Keep donation</button>
+                    <button type="submit" class="btn btn-danger-soft btn-sm"><i class="fa-solid fa-ban"></i> Cancel donation</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,90 @@
+{% extends "dashboard_base.html" %}
+{% load static %}
+
+{% block title %}Report an issue · Food Bridge{% endblock %}
+
+{% block dash_content %}
+<div class="d-flex flex-wrap justify-content-between align-items-end gap-2 mb-3">
+    <div>
+        <span class="eyebrow orange"><i class="fa-solid fa-flag"></i> Support</span>
+        <h2 style="font-size:1.5rem;margin:.6rem 0 .2rem;">Report an issue</h2>
+        <p class="text-muted mb-0" style="font-size:.82rem;">Tell us about a donation, pickup, delivery, account, or technical problem. Our team reviews every report.</p>
+    </div>
+    {% if user.is_staff %}
+    <a href="{% url 'support:admin_issues' %}" class="btn btn-soft"><i class="fa-solid fa-inbox"></i> Manage reported issues</a>
+    {% endif %}
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-7">
+        <form method="post" class="card-soft form-card" data-submit-once novalidate>
+            {% csrf_token %}
+            {% if form.non_field_errors %}
+            <div class="alert-app warning mb-3">
+                <i class="fa-solid fa-circle-exclamation"></i>
+                <div>{% for error in form.non_field_errors %}<div>{{ error }}</div>{% endfor %}</div>
+            </div>
+            {% endif %}
+            <div class="form-grid">
+                {% include "partials/form_field.html" with field=form.category %}
+                {% include "partials/form_field.html" with field=form.related_donation %}
+                {% include "partials/form_field.html" with field=form.subject wrapper_class="span-2" %}
+                {% include "partials/form_field.html" with field=form.description wrapper_class="span-2" %}
+            </div>
+            <div class="alert-app info mt-2">
+                <i class="fa-solid fa-lock"></i>
+                <div>Include only the details needed to investigate. Do not share passwords or sensitive personal information.</div>
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn btn-brand"><i class="fa-solid fa-paper-plane"></i> Submit report</button>
+                <a href="{{ user.dashboard_url }}" class="btn btn-soft">Cancel</a>
+            </div>
+        </form>
+    </div>
+
+    <div class="col-lg-5">
+        <div class="card-soft">
+            <div class="card-head">
+                <div>
+                    <h2>Your recent reports</h2>
+                    <p>Status updates from the Food Bridge team</p>
+                </div>
+            </div>
+            <div class="card-body">
+                {% for issue in my_issues %}
+                <div class="request-row">
+                    <span class="food-thumb {% if issue.status == 'resolved' %}{% elif issue.status == 'dismissed' %}orange{% else %}orange{% endif %}">
+                        <i class="fa-solid {% if issue.status == 'resolved' %}fa-circle-check{% elif issue.status == 'dismissed' %}fa-ban{% else %}fa-flag{% endif %}"></i>
+                    </span>
+                    <div class="request-copy">
+                        <strong>{{ issue.subject|truncatechars:42 }}</strong>
+                        <p>{{ issue.get_category_display }} · {{ issue.created_at|date:"d M Y" }}</p>
+                        <span class="badge-soft badge-soft-{{ issue.status_css }}">{{ issue.get_status_display }}</span>
+                        {% if issue.admin_notes %}
+                        <p style="margin-top:.4rem;"><i class="fa-solid fa-comment-dots"></i> {{ issue.admin_notes|truncatechars:120 }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+                {% empty %}
+                <div class="empty-state" style="padding:1.6rem .5rem;">
+                    <div class="empty-icon" style="width:52px;height:52px;font-size:1.1rem;"><i class="fa-solid fa-flag"></i></div>
+                    <h3>No reports yet</h3>
+                    <p>If something goes wrong, submit a report and track its resolution here.</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="card-soft mt-3">
+            <div class="card-body">
+                <h3 style="font-size:.9rem;"><i class="fa-solid fa-circle-info text-forest"></i> What happens next?</h3>
+                <ul style="font-size:.78rem;color:var(--muted);padding-left:1.1rem;margin:0;">
+                    <li class="mb-1">Your report is logged and administrators are notified immediately.</li>
+                    <li class="mb-1">The team may follow up for more information.</li>
+                    <li>You will receive an in-app notification whenever the status changes.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

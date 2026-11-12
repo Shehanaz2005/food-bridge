@@ -1,0 +1,132 @@
+{% extends "dashboard_base.html" %}
+{% load static %}
+
+{% block title %}Manage users · Food Bridge{% endblock %}
+
+{% block dash_content %}
+<div class="d-flex flex-wrap justify-content-between align-items-end gap-2 mb-3">
+    <div>
+        <span class="eyebrow orange"><i class="fa-solid fa-users-gear"></i> Administration</span>
+        <h2 style="font-size:1.5rem;margin:.6rem 0 .2rem;">Manage users</h2>
+        <p class="text-muted mb-0" style="font-size:.82rem;">{{ total }} account{{ total|pluralize }} matching this view. Review NGOs, verify organisations, and block abusive accounts.</p>
+    </div>
+    <a href="{% url 'accounts:admin_dashboard' %}" class="btn btn-soft"><i class="fa-solid fa-arrow-left"></i> Dashboard</a>
+</div>
+
+<form method="get" class="filter-bar">
+    <div class="filter-grid">
+        <div class="filter-wide">
+            <label class="form-label" for="{{ form.q.id_for_label }}">Search accounts</label>
+            {{ form.q }}
+        </div>
+        <div>
+            <label class="form-label" for="{{ form.role.id_for_label }}">Role</label>
+            {{ form.role }}
+        </div>
+        <div>
+            <label class="form-label" for="{{ form.status.id_for_label }}">Status</label>
+            {{ form.status }}
+        </div>
+        <div class="filter-actions">
+            <button type="submit" class="btn btn-forest"><i class="fa-solid fa-filter"></i> Apply</button>
+            <a href="{% url 'accounts:admin_users' %}" class="btn btn-soft">Reset</a>
+        </div>
+    </div>
+</form>
+
+<div class="card-soft">
+    <div class="card-head">
+        <div>
+            <h2>Accounts</h2>
+            <p>Newest accounts first · showing up to 200 results</p>
+        </div>
+    </div>
+    {% if users %}
+    <div class="table-wrap">
+        <table class="table-app">
+            <thead>
+                <tr><th>Account</th><th>Role</th><th>Contact</th><th>Verification</th><th>Status</th><th>Joined</th><th></th></tr>
+            </thead>
+            <tbody>
+                {% for account in users %}
+                <tr>
+                    <td>
+                        <div class="avatar-cell">
+                            {% if account.avatar %}
+                                <img src="{{ account.avatar.url }}" alt="" class="avatar-img avatar-sm">
+                            {% else %}
+                                <span class="avatar-initials avatar-sm">{{ account.initials }}</span>
+                            {% endif %}
+                            <div>
+                                <strong>{{ account.display_name|truncatechars:28 }}</strong>
+                                <span>@{{ account.username }}</span>
+                            </div>
+                        </div>
+                    </td>
+                    <td><span class="badge-soft badge-soft-secondary">{{ account.get_role_display }}</span></td>
+                    <td>
+                        <div class="cell-sub">{{ account.email|truncatechars:30 }}</div>
+                        <div class="cell-sub">{{ account.phone|default:"No phone" }}{% if account.city %} · {{ account.city }}{% endif %}</div>
+                    </td>
+                    <td>
+                        {% if account.role == 'ngo' %}
+                            {% if account.ngo_profile.verified %}
+                            <span class="badge-soft badge-soft-success"><i class="fa-solid fa-circle-check"></i> Verified</span>
+                            {% else %}
+                            <span class="badge-soft badge-soft-warning"><i class="fa-solid fa-hourglass-half"></i> Pending</span>
+                            {% endif %}
+                        {% elif account.role == 'volunteer' %}
+                            {% if account.volunteer_profile.is_available %}
+                            <span class="badge-soft badge-soft-success">Available</span>
+                            {% else %}
+                            <span class="badge-soft badge-soft-secondary">Unavailable</span>
+                            {% endif %}
+                        {% else %}
+                            <span class="cell-sub">—</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if account.is_blocked %}
+                        <span class="badge-soft badge-soft-danger" title="{{ account.blocked_reason }}">Blocked</span>
+                        {% elif account.is_staff %}
+                        <span class="badge-soft badge-soft-primary">Administrator</span>
+                        {% else %}
+                        <span class="badge-soft badge-soft-success">Active</span>
+                        {% endif %}
+                    </td>
+                    <td><span class="cell-sub">{{ account.date_joined|date:"d M Y" }}</span></td>
+                    <td class="cell-actions">
+                        {% if account.role == 'ngo' and not account.ngo_profile.verified %}
+                        <form method="post" action="{% url 'accounts:verify_ngo' account.pk %}" class="d-inline" data-confirm="Verify {{ account.display_name }}? They will be able to request food.">
+                            {% csrf_token %}
+                            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                            <button type="submit" class="btn btn-sm btn-forest" title="Verify NGO"><i class="fa-solid fa-check"></i></button>
+                        </form>
+                        {% endif %}
+                        <a href="{% url 'accounts:admin_user_detail' account.pk %}" class="btn btn-sm btn-soft">Review</a>
+                        {% if account != user and not account.is_superuser %}
+                        <form method="post" action="{% url 'accounts:block_user' account.pk %}" class="d-inline" data-confirm="{% if account.is_blocked %}Unblock {{ account.display_name }}?{% else %}Block {{ account.display_name }}? They will be signed out and unable to sign in.{% endif %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                            {% if not account.is_blocked %}<input type="hidden" name="reason" value="Policy violation">{% endif %}
+                            <button type="submit" class="btn btn-sm {% if account.is_blocked %}btn-soft{% else %}btn-danger-soft{% endif %}" title="{% if account.is_blocked %}Unblock{% else %}Block{% endif %}">
+                                <i class="fa-solid {% if account.is_blocked %}fa-unlock{% else %}fa-ban{% endif %}"></i>
+                            </button>
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-icon"><i class="fa-solid fa-users"></i></div>
+        <h3>No accounts match this view</h3>
+        <p>Try clearing the search or choosing a different role or status filter.</p>
+        <a href="{% url 'accounts:admin_users' %}" class="btn btn-forest btn-sm">Clear filters</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

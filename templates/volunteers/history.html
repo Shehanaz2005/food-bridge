@@ -1,0 +1,96 @@
+{% extends "dashboard_base.html" %}
+{% load static %}
+
+{% block title %}Volunteer history · Food Bridge{% endblock %}
+
+{% block dash_content %}
+<div class="d-flex flex-wrap justify-content-between align-items-end gap-2 mb-3">
+    <div>
+        <span class="eyebrow orange"><i class="fa-solid fa-clock-rotate-left"></i> Archived deliveries</span>
+        <h2 style="font-size:1.5rem;margin:.6rem 0 .2rem;">Volunteer history</h2>
+        <p class="text-muted mb-0" style="font-size:.82rem;">Completed, declined, and cancelled assignments. Every rescue you helped move is recorded here.</p>
+    </div>
+    <a href="{% url 'volunteers:assignments' %}" class="btn btn-soft"><i class="fa-solid fa-arrow-left"></i> Active assignments</a>
+</div>
+
+<div class="stat-grid">
+    <div class="stat-card">
+        <div class="stat-top"><span class="stat-icon"><i class="fa-solid fa-truck-fast"></i></span></div>
+        <div class="stat-value">{{ stats.total }}</div>
+        <div class="stat-label">Total assignments</div>
+        <span class="stat-note muted">All time</span>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top"><span class="stat-icon info"><i class="fa-solid fa-circle-check"></i></span></div>
+        <div class="stat-value">{{ stats.completed }}</div>
+        <div class="stat-label">Completed deliveries</div>
+        <span class="stat-note muted">Confirmed by NGOs</span>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top"><span class="stat-icon orange"><i class="fa-solid fa-inbox"></i></span></div>
+        <div class="stat-value">{{ stats.offered }}</div>
+        <div class="stat-label">Offers waiting</div>
+        <span class="stat-note muted">Respond to keep food moving</span>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top"><span class="stat-icon purple"><i class="fa-solid fa-weight-hanging"></i></span></div>
+        <div class="stat-value">{{ stats.completed }}</div>
+        <div class="stat-label">Food delivered by you</div>
+        <div class="d-flex flex-wrap gap-2 mt-1">
+            {% for quantity in stats.delivered_quantity %}
+            <span class="badge-soft badge-soft-success">{{ quantity.formatted }} {{ quantity.label }}</span>
+            {% empty %}
+            <span class="stat-note muted">No delivered quantity yet</span>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<div class="card-soft">
+    <div class="card-head">
+        <div>
+            <h2>Closed assignments</h2>
+            <p>{{ assignments|length }} record{{ assignments|length|pluralize }}</p>
+        </div>
+    </div>
+    {% if assignments %}
+    <div class="table-wrap">
+        <table class="table-app">
+            <thead><tr><th>Food</th><th>Route</th><th>Quantity</th><th>Outcome</th><th>Closed</th><th></th></tr></thead>
+            <tbody>
+                {% for assignment in assignments %}
+                <tr>
+                    <td>
+                        <div class="food-cell">
+                            <span class="food-thumb {% cycle '' 'orange' %}">
+                                {% if assignment.donation.image %}<img src="{{ assignment.donation.image.url }}" alt="">{% else %}<i class="fa-solid {{ assignment.donation.category_icon }}"></i>{% endif %}
+                            </span>
+                            <div>
+                                <div class="cell-main">{{ assignment.donation.food_name }}</div>
+                                <div class="cell-sub">{{ assignment.donation.get_category_display }} · {{ assignment.donation.pickup_city }}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="cell-sub"><i class="fa-solid fa-utensils me-1"></i>{{ assignment.donation.pickup_city }}</div>
+                        <div class="cell-sub"><i class="fa-solid fa-house-chimney-user me-1"></i>{{ assignment.donation.recipient_ngo.display_name|default:"Unknown NGO"|truncatechars:22 }}</div>
+                    </td>
+                    <td>{{ assignment.donation.quantity_display }}</td>
+                    <td><span class="badge-soft badge-soft-{{ assignment.status_css }}">{{ assignment.get_status_display }}</span></td>
+                    <td><span class="cell-sub">{% if assignment.completed_at %}{{ assignment.completed_at|date:"d M Y" }}{% else %}{{ assignment.updated_at|date:"d M Y" }}{% endif %}</span></td>
+                    <td class="cell-actions"><a href="{% url 'volunteers:assignment_detail' assignment.pk %}" class="btn btn-sm btn-soft">View</a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-icon"><i class="fa-solid fa-flag-checkered"></i></div>
+        <h3>No completed assignments yet</h3>
+        <p>Accept a pickup offer to start building your volunteer history. Completed and closed assignments will be archived here.</p>
+        <a href="{% url 'volunteers:assignments' %}" class="btn btn-forest btn-sm">View assignments</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
